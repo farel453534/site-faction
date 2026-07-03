@@ -7,21 +7,14 @@ import {
   fetchDiscordUser,
   type DiscordUser,
 } from "../lib/discord";
+import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
 
 const router: IRouter = Router();
 
-const SESSION_COOKIE = "mss_session";
 const STATE_COOKIE = "mss_oauth_state";
 const sameSite =
   (process.env["COOKIE_SAMESITE"] as "lax" | "none" | "strict" | undefined) ??
   "lax";
-
-interface SessionUser {
-  id: string;
-  username: string;
-  global_name: string | null;
-  avatar: string | null;
-}
 
 function getBaseUrl(req: Request): string {
   const proto =
@@ -109,25 +102,19 @@ router.get("/auth/discord/callback", async (req, res) => {
 });
 
 router.get("/auth/me", (req, res) => {
-  const raw = req.signedCookies?.[SESSION_COOKIE] as string | undefined;
-  if (!raw) {
+  const user = readSession(req);
+  if (!user) {
     return res.status(401).json({ authenticated: false });
   }
-  try {
-    const user = JSON.parse(raw) as SessionUser;
-    return res.json({
-      authenticated: true,
-      user: {
-        id: user.id,
-        username: user.username,
-        displayName: user.global_name || user.username,
-        avatarUrl: buildAvatarUrl(user),
-      },
-    });
-  } catch {
-    res.clearCookie(SESSION_COOKIE, { path: "/" });
-    return res.status(401).json({ authenticated: false });
-  }
+  return res.json({
+    authenticated: true,
+    user: {
+      id: user.id,
+      username: user.username,
+      displayName: user.global_name || user.username,
+      avatarUrl: buildAvatarUrl(user),
+    },
+  });
 });
 
 router.post("/auth/logout", (_req, res) => {

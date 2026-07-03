@@ -1,1 +1,2 @@
 - [Discord OAuth + Railway](discord-oauth-railway.md) — custom end-user Discord login (Replit connector is owner-only); env contract for cross-origin Railway Option B.
+- [Game DB player stats](game-db-stats.md) — bot's multi-guild Postgres (GAME_DATABASE_URL); scope every query by faction guild_id; reputation=réputation, recensement=captures.

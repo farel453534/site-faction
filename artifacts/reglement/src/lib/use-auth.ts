@@ -54,3 +54,33 @@ export function useAuth() {
     logout: () => logoutMutation.mutate(),
   };
 }
+
+export interface CaptureEntry {
+  captureNumero: string | null;
+  dateEvent: string | null;
+  lieu: string | null;
+  victime: string | null;
+  agresseur: string | null;
+  submittedAt: string | null;
+}
+
+export interface PlayerStats {
+  reputation: { points: number; rank: number | null; totalPlayers: number };
+  captures: { count: number; recent: CaptureEntry[] };
+}
+
+export function usePlayerStats(enabled: boolean) {
+  return useQuery<PlayerStats>({
+    queryKey: ["me", "stats"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/me/stats`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger vos statistiques");
+      return (await res.json()) as PlayerStats;
+    },
+    staleTime: 30_000,
+    retry: false,
+  });
+}

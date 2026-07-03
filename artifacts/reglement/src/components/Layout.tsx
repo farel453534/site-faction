@@ -11,6 +11,7 @@ import {
   ScrollText,
   ChevronRight,
   LogOut,
+  User,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -362,13 +363,21 @@ function AuthButton() {
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 w-44 bg-popover border border-popover-border rounded-xl shadow-2xl shadow-black/60 overflow-hidden z-40">
+          <Link
+            href="/profil"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-white/5 transition-colors"
+          >
+            <User className="w-4 h-4" />
+            Mon profil
+          </Link>
           <button
             type="button"
             onClick={() => {
               setOpen(false);
               logout();
             }}
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-white/5 transition-colors"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-white/5 transition-colors border-t border-white/5"
           >
             <LogOut className="w-4 h-4" />
             Déconnexion

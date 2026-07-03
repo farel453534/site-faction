@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import RulePageView from "@/pages/RulePageView";
+import Profile from "@/pages/Profile";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -15,6 +16,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/profil" component={Profile} />
       <Route path="/:group/:page" component={RulePageView} />
       <Route component={NotFound} />
     </Switch>
