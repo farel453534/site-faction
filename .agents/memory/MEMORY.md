@@ -1,2 +1,3 @@
 - [Tailwind v4 accordion animations](tailwind-v4-accordion.md) — shadcn/Radix accordion won't expand unless you manually define `accordion-down/up` keyframes + `--animate-*` vars in index.css.
 - [Règlement content source](reglement-content-source.md) — reglement site mirrors a public Google Site; sub-page content lives in src/data/reglement.ts; how to re-scrape (JS-rendered nav, accented slugs).
+- [Flyout outside-click bug](flyout-outside-click.md) — a nav flyout closed on document mousedown destroys its own links before their click fires; whitelist BOTH trigger and panel.

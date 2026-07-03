@@ -5,12 +5,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { BookOpen, ArrowLeft } from "lucide-react";
 import { useSearch } from "@/lib/search-context";
 
 function Example({ children }: { children: ReactNode }) {
   return (
-    <div className="border-l-2 border-border bg-secondary/30 px-4 py-3 rounded-sm text-[0.98rem]">
-      <span className="eyebrow text-[0.68rem] text-foreground/60 mr-2">Exemple</span>
+    <div className="border-l-2 border-primary/60 bg-primary/[0.05] px-4 py-3 rounded-r-md text-[0.95rem]">
+      <span className="text-[0.68rem] font-semibold uppercase tracking-wider text-primary mr-2">
+        Exemple
+      </span>
       {children}
     </div>
   );
@@ -18,16 +21,18 @@ function Example({ children }: { children: ReactNode }) {
 
 function Warning({ children }: { children: ReactNode }) {
   return (
-    <div className="border-l-2 border-primary bg-primary/[0.06] px-4 py-3 rounded-sm">
-      <span className="eyebrow text-[0.68rem] text-primary block mb-1">Attention</span>
-      <div className="text-foreground/80">{children}</div>
+    <div className="border-l-2 border-destructive bg-destructive/[0.08] px-4 py-3 rounded-r-md">
+      <span className="text-[0.68rem] font-semibold uppercase tracking-wider text-destructive block mb-1">
+        Attention
+      </span>
+      <div className="text-foreground/85">{children}</div>
     </div>
   );
 }
 
 function SubHeading({ children }: { children: ReactNode }) {
   return (
-    <h4 className="font-serif text-lg font-semibold text-foreground border-b border-border pb-1.5">
+    <h4 className="font-serif text-base font-semibold text-foreground border-b border-white/10 pb-1.5">
       {children}
     </h4>
   );
@@ -35,7 +40,6 @@ function SubHeading({ children }: { children: ReactNode }) {
 
 type Section = {
   value: string;
-  num: string;
   title: string;
   keywords: string;
   body: ReactNode;
@@ -44,7 +48,6 @@ type Section = {
 const sections: Section[] = [
   {
     value: "item-1",
-    num: "I",
     title: "Fiche de suivie",
     keywords: "fiche de suivie suivi ck",
     body: (
@@ -58,7 +61,6 @@ const sections: Section[] = [
   },
   {
     value: "item-2",
-    num: "II",
     title: "Le FearRP",
     keywords: "le fearrp peur fear",
     body: (
@@ -75,7 +77,6 @@ const sections: Section[] = [
   },
   {
     value: "item-3",
-    num: "III",
     title: "Le PainRP",
     keywords: "le painrp douleur pain",
     body: (
@@ -87,7 +88,6 @@ const sections: Section[] = [
   },
   {
     value: "item-4",
-    num: "IV",
     title: "NLR (New Life Rule)",
     keywords: "nlr new life rule mort coma",
     body: (
@@ -104,7 +104,6 @@ const sections: Section[] = [
   },
   {
     value: "item-5",
-    num: "V",
     title: "Le FairPlay",
     keywords: "le fairplay fair play",
     body: (
@@ -119,7 +118,6 @@ const sections: Section[] = [
   },
   {
     value: "item-6",
-    num: "VI",
     title: "Les Temps de RP",
     keywords: "les temps de rp couvre feu horaires temps",
     body: (
@@ -135,7 +133,6 @@ const sections: Section[] = [
   },
   {
     value: "item-7",
-    num: "VII",
     title: "Les Sanctions",
     keywords: "les sanctions drapeau rouge noir hrp rp staff",
     body: (
@@ -163,18 +160,18 @@ const sections: Section[] = [
           </ul>
         </div>
 
-        <div className="border-l-2 border-primary bg-primary/[0.06] px-4 py-3 rounded-sm space-y-2">
-          <h4 className="font-serif text-lg font-semibold text-primary">Le Drapeau Rouge</h4>
-          <ul className="list-disc list-outside pl-5 space-y-1 marker:text-primary text-foreground/80">
+        <div className="border-l-2 border-destructive bg-destructive/[0.08] px-4 py-3 rounded-r-md space-y-2">
+          <h4 className="font-serif text-base font-semibold text-destructive">Le Drapeau Rouge</h4>
+          <ul className="list-disc list-outside pl-5 space-y-1 marker:text-destructive text-foreground/85">
             <li>Sanction exceptionnelle décidée par un conseil regroupant votre gérant de faction et un Super Admin.</li>
             <li>Cela signifie que si vous êtes capturé, votre vie est en jeu.</li>
             <li>Le gérant de la faction vous ayant capturé pourra demander un CK immédiat, sans avoir à faire de requête.</li>
           </ul>
         </div>
 
-        <div className="border-l-2 border-primary bg-primary/[0.1] px-4 py-3 rounded-sm space-y-2">
-          <h4 className="font-serif text-lg font-bold text-primary">Le Drapeau Noir</h4>
-          <ul className="list-disc list-outside pl-5 space-y-1 marker:text-primary text-foreground/90">
+        <div className="border-l-2 border-destructive bg-destructive/[0.14] px-4 py-3 rounded-r-md space-y-2">
+          <h4 className="font-serif text-base font-bold text-destructive">Le Drapeau Noir</h4>
+          <ul className="list-disc list-outside pl-5 space-y-1 marker:text-destructive text-foreground/90">
             <li>Sanction extrême, infligée uniquement par un Super Admin.</li>
             <li>Elle signifie que votre vie est systématiquement en danger lors de tout combat RP.</li>
             <li>Si vous tombez au combat, vous serez automatiquement CK, sans discussion.</li>
@@ -196,7 +193,6 @@ const sections: Section[] = [
   },
   {
     value: "item-8",
-    num: "VIII",
     title: "Les élèves",
     keywords: "les eleves eleves capture foret quidditch",
     body: (
@@ -219,11 +215,11 @@ const sections: Section[] = [
           <p className="text-primary italic">Toute capture sans justification RP valable sera considérée comme un abus / WinRP et pourra être sanctionnée.</p>
         </div>
 
-        <div className="border-l-2 border-primary bg-primary/[0.06] px-4 py-3 rounded-sm space-y-2">
-          <h4 className="font-serif text-lg font-semibold text-primary">Capture au Terrain de Quidditch</h4>
+        <div className="border-l-2 border-destructive bg-destructive/[0.08] px-4 py-3 rounded-r-md space-y-2">
+          <h4 className="font-serif text-base font-semibold text-destructive">Capture au Terrain de Quidditch</h4>
           <p className="text-foreground/85">Les captures d'élèves au Terrain de Quidditch sont strictement interdites, sans exception.</p>
           <p className="text-foreground/85">De plus :</p>
-          <ul className="list-disc list-outside pl-5 space-y-1 marker:text-primary text-foreground/80">
+          <ul className="list-disc list-outside pl-5 space-y-1 marker:text-destructive text-foreground/80">
             <li>L'accès au Terrain de Quidditch est interdit à toute personne en dessous du grade de Membre du Conseil/Commandant Auror/Emissaire du Sang ;</li>
             <li>Toute présence non autorisée ou tentative de capture dans cette zone sera sanctionnée.</li>
           </ul>
@@ -242,51 +238,35 @@ export default function Home() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-      {/* Title */}
-      <header className="mb-10">
-        <div className="eyebrow text-[0.72rem] text-primary mb-3">
-          Ministère de la Magie · Règlement
+      {/* Breadcrumb + title */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Règlements</span>
         </div>
-        <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-serif font-bold text-foreground tracking-tight leading-[1.05] letterpress">
+        <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground tracking-tight">
           Règlement spécifique au RP
         </h1>
-        <div className="mt-5 flex items-center gap-3">
-          <span className="h-px w-16 bg-primary" />
-          <span className="h-px flex-1 bg-border" />
-        </div>
-      </header>
-
-      {/* Intro — pull quote */}
-      <div className="mb-12 border-l-2 border-primary pl-6 py-1">
-        <p className="text-foreground/80 leading-[1.8] text-[1.02rem]">
-          <span className="text-primary font-semibold">Ce règlement est considéré comme lu et approuvé par toutes et tous.</span> Des sanctions peuvent donc vous être appliquées si celui-ci est enfreint. Le règlement de faction doit être connu et appris par tous les joueurs souhaitant s'immiscer dans un RP dit 'plus sérieux'. Aucune dérogation aux règles ne sera tolérée, de plus chaque erreur commise sera sanctionnée d'un avertissement 'Faction'. Un avertissement 'Faction' équivaut à une probable rétrogradation directe du poste en question suivie d'une exclusion de la faction pour une durée de 2 mois. Avant tout, il est interdit de faire son propre règlement, si une précision n'est pas inscrite sur ce règlement elle est automatiquement interdite jusqu'à discussion de celle-ci en réunion STAFF.
-        </p>
       </div>
 
-      {/* Decree list */}
-      <Accordion
-        type="single"
-        collapsible
-        className="w-full border-t border-border"
-      >
+      {/* Accordion cards */}
+      <Accordion type="single" collapsible className="w-full space-y-2.5">
         {shown.map((s) => (
           <AccordionItem
             key={s.value}
             value={s.value}
-            className="border-b border-border"
+            className="border border-white/[0.07] bg-white/[0.03] rounded-xl overflow-hidden transition-colors hover:bg-white/[0.05] data-[state=open]:border-primary/30 data-[state=open]:bg-white/[0.04]"
           >
-            <AccordionTrigger className="py-5 hover:no-underline group data-[state=open]:text-primary [&>svg]:text-muted-foreground [&>svg]:group-hover:text-primary">
-              <div className="flex items-baseline gap-5 text-left">
-                <span className="font-serif text-lg text-primary/70 group-data-[state=open]:text-primary w-10 shrink-0 tabular-nums tracking-wide">
-                  {s.num}
-                </span>
-                <span className="font-serif text-xl md:text-2xl font-semibold tracking-tight text-foreground group-hover:text-primary group-data-[state=open]:text-primary transition-colors">
+            <AccordionTrigger className="px-5 py-4 hover:no-underline group [&>svg]:text-muted-foreground">
+              <div className="flex items-center gap-3.5 text-left">
+                <BookOpen className="w-5 h-5 text-primary shrink-0" />
+                <span className="font-serif text-[1.05rem] font-semibold text-foreground group-data-[state=open]:text-primary transition-colors">
                   {s.title}
                 </span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="pb-8 pt-1">
-              <div className="ml-0 md:ml-[3.75rem] border-l border-border/60 pl-6 text-foreground/75 leading-[1.75] space-y-4">
+            <AccordionContent className="px-5 pb-6 pt-0">
+              <div className="ml-[2.15rem] border-l border-white/10 pl-5 text-foreground/75 leading-[1.7] space-y-4">
                 {s.body}
               </div>
             </AccordionContent>
@@ -295,7 +275,7 @@ export default function Home() {
       </Accordion>
 
       {shown.length === 0 && (
-        <div className="text-center text-muted-foreground py-16 italic">
+        <div className="text-center text-muted-foreground py-16">
           Aucune règle ne correspond à votre recherche.
         </div>
       )}

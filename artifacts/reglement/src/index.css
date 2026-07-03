@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500;1,600;1,700&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -56,13 +56,13 @@
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
 
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
-  --radius-xl: calc(var(--radius) + 6px);
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 
-  --animate-accordion-down: accordion-down 0.28s ease;
-  --animate-accordion-up: accordion-up 0.28s ease;
+  --animate-accordion-down: accordion-down 0.25s ease;
+  --animate-accordion-up: accordion-up 0.25s ease;
 }
 
 @keyframes accordion-down {
@@ -82,51 +82,51 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Obsidian codex — dark only, warm ink on near-black */
-  --background: 0 0% 4.5%;
-  --foreground: 40 14% 86%;
-  --border: 30 7% 15%;
+  /* Black + gold, dark only */
+  --background: 0 0% 4%;
+  --foreground: 0 0% 96%;
+  --border: 0 0% 100%;
 
-  --card: 24 6% 7%;
-  --card-foreground: 40 14% 86%;
-  --card-border: 30 7% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 96%;
+  --card-border: 0 0% 100%;
 
-  --popover: 24 6% 7%;
-  --popover-foreground: 40 14% 86%;
-  --popover-border: 30 7% 15%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 0 0% 16%;
 
-  /* wax-seal crimson */
-  --primary: 352 70% 46%;
-  --primary-foreground: 40 30% 96%;
+  /* gold */
+  --primary: 43 88% 55%;
+  --primary-foreground: 0 0% 8%;
 
-  --secondary: 24 5% 12%;
-  --secondary-foreground: 40 14% 86%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 96%;
 
-  --muted: 24 5% 12%;
-  --muted-foreground: 40 6% 56%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
 
-  --accent: 352 70% 46%;
-  --accent-foreground: 40 30% 96%;
+  --accent: 43 88% 55%;
+  --accent-foreground: 0 0% 8%;
 
-  --destructive: 352 70% 46%;
-  --destructive-foreground: 40 30% 96%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
 
-  --input: 30 7% 18%;
-  --ring: 352 70% 46%;
+  --input: 0 0% 18%;
+  --ring: 43 88% 55%;
 
-  --sidebar: 0 0% 3.5%;
-  --sidebar-foreground: 40 10% 78%;
-  --sidebar-border: 30 7% 11%;
-  --sidebar-primary: 352 70% 46%;
-  --sidebar-primary-foreground: 40 30% 96%;
-  --sidebar-accent: 24 5% 12%;
-  --sidebar-accent-foreground: 352 70% 46%;
-  --sidebar-ring: 352 70% 46%;
+  --sidebar: 0 0% 3%;
+  --sidebar-foreground: 0 0% 78%;
+  --sidebar-border: 0 0% 10%;
+  --sidebar-primary: 43 88% 55%;
+  --sidebar-primary-foreground: 0 0% 8%;
+  --sidebar-accent: 0 0% 12%;
+  --sidebar-accent-foreground: 43 88% 55%;
+  --sidebar-ring: 43 88% 55%;
 
-  --app-font-sans: 'Spectral', Georgia, serif;
-  --app-font-serif: 'Playfair Display', Georgia, serif;
-  --app-font-mono: 'Spectral', Georgia, serif;
-  --radius: 0.25rem;
+  --app-font-sans: 'Inter', system-ui, sans-serif;
+  --app-font-serif: 'Poppins', system-ui, sans-serif;
+  --app-font-mono: 'Inter', monospace;
+  --radius: 0.75rem;
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-accent-border: hsl(var(--sidebar-accent));
@@ -138,44 +138,44 @@
 }
 
 .dark {
-  --background: 0 0% 4.5%;
-  --foreground: 40 14% 86%;
-  --border: 30 7% 15%;
+  --background: 0 0% 4%;
+  --foreground: 0 0% 96%;
+  --border: 0 0% 100%;
 
-  --card: 24 6% 7%;
-  --card-foreground: 40 14% 86%;
-  --card-border: 30 7% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 96%;
+  --card-border: 0 0% 100%;
 
-  --popover: 24 6% 7%;
-  --popover-foreground: 40 14% 86%;
-  --popover-border: 30 7% 15%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 0 0% 16%;
 
-  --primary: 352 70% 46%;
-  --primary-foreground: 40 30% 96%;
+  --primary: 43 88% 55%;
+  --primary-foreground: 0 0% 8%;
 
-  --secondary: 24 5% 12%;
-  --secondary-foreground: 40 14% 86%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 96%;
 
-  --muted: 24 5% 12%;
-  --muted-foreground: 40 6% 56%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
 
-  --accent: 352 70% 46%;
-  --accent-foreground: 40 30% 96%;
+  --accent: 43 88% 55%;
+  --accent-foreground: 0 0% 8%;
 
-  --destructive: 352 70% 46%;
-  --destructive-foreground: 40 30% 96%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
 
-  --input: 30 7% 18%;
-  --ring: 352 70% 46%;
+  --input: 0 0% 18%;
+  --ring: 43 88% 55%;
 
-  --sidebar: 0 0% 3.5%;
-  --sidebar-foreground: 40 10% 78%;
-  --sidebar-border: 30 7% 11%;
-  --sidebar-primary: 352 70% 46%;
-  --sidebar-primary-foreground: 40 30% 96%;
-  --sidebar-accent: 24 5% 12%;
-  --sidebar-accent-foreground: 352 70% 46%;
-  --sidebar-ring: 352 70% 46%;
+  --sidebar: 0 0% 3%;
+  --sidebar-foreground: 0 0% 78%;
+  --sidebar-border: 0 0% 10%;
+  --sidebar-primary: 43 88% 55%;
+  --sidebar-primary-foreground: 0 0% 8%;
+  --sidebar-accent: 0 0% 12%;
+  --sidebar-accent-foreground: 43 88% 55%;
+  --sidebar-ring: 43 88% 55%;
 }
 
 @layer base {
@@ -184,18 +184,17 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    font-feature-settings: "liga" 1, "onum" 1, "kern" 1;
   }
 
   ::-webkit-scrollbar {
-    width: 9px;
+    width: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 0;
+    background: hsl(0 0% 20%);
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary));
@@ -206,27 +205,18 @@
   }
 }
 
-/* Letterpress: subtle depth on dark, replaces neon glow */
-.letterpress {
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
-}
-
-/* Small-caps label used for kickers / eyebrows */
-.eyebrow {
-  font-family: var(--app-font-sans);
-  font-variant: small-caps;
-  letter-spacing: 0.22em;
-  text-transform: lowercase;
-}
-
-/* Paper grain */
-.bg-texture {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
-}
-
-/* Soft top-lit vignette instead of neon blobs */
-.bg-vignette {
+/* Stage backdrop: deep black with a warm gold glow rising from the bottom */
+.bg-stage {
   background:
-    radial-gradient(120% 80% at 50% -10%, hsl(352 70% 46% / 0.06) 0%, transparent 55%),
-    radial-gradient(100% 100% at 50% 0%, transparent 60%, hsl(0 0% 0% / 0.55) 100%);
+    radial-gradient(90% 55% at 50% 108%, hsl(43 88% 52% / 0.18) 0%, transparent 62%),
+    radial-gradient(60% 40% at 50% 0%, hsl(0 0% 12% / 0.6) 0%, transparent 70%),
+    #070707;
+}
+
+.gold-text {
+  color: hsl(var(--primary));
+}
+
+.bg-texture {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
 }

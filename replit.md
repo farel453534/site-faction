@@ -1,6 +1,6 @@
-# Règlement Faction — MSSClick Ministère
+# Règlement Faction — MSSClick
 
-A dark, atmospheric single-page rules reference site for a Harry Potter roleplay FiveM server faction. Displays the full faction règlement in expandable accordion sections. Theme: black/gray/white/red.
+A dark rules-reference site for a Harry Potter roleplay FiveM server faction. Displays the full faction règlement in expandable accordion cards. Theme: black + gold, modern sans-serif. Branded "Règlement Faction" (NOT "Ministère").
 
 ## Run & Operate
 
@@ -24,29 +24,30 @@ A dark, atmospheric single-page rules reference site for a Harry Potter roleplay
 
 - Site lives in `artifacts/reglement` (react-vite, static, no backend needed).
 - `src/App.tsx` — routing (wouter): `/` → Home (accueil), `/:group/:page` → RulePageView.
-- `src/components/Layout.tsx` — shared shell: collapsible left-sidebar nav + topbar + scroll area.
-- `src/pages/Home.tsx` — accueil content (intro + 8 hand-styled accordions).
+- `src/components/Layout.tsx` — shared shell: full-width topbar (emblem + search pill + Discord/social pills + "Se connecter") + left icon-only rail (Home + one icon per group, aria-label = group title) with per-group flyout page nav + search-results dropdown + scroll area.
+- `src/pages/Home.tsx` — accueil content ("Règlement spécifique au RP", 8 data-driven accordion cards).
 - `src/pages/RulePageView.tsx` — generic markdown page (react-markdown + remark-gfm + tailwind typography).
 - `src/data/reglement.ts` — SOURCE OF TRUTH for all sub-page content (4 groups, 23 pages), scraped/cleaned markdown.
 - `src/lib/search-context.tsx` — global search state.
-- `src/index.css` — theme vars, red palette, fonts (Playfair Display display + Spectral body), utilities (`.eyebrow`, `.letterpress`, `.bg-vignette`, `.bg-texture`, `.ornament`), accordion keyframes.
+- `src/index.css` — theme vars, black+gold palette (`--primary: 43 88% 55%`), fonts (Inter body + Poppins repurposed as `--app-font-serif`/`font-serif` for headings/labels), utilities (`.bg-stage` bottom gold glow, `.gold-text`, `.bg-texture`), accordion keyframes.
 
 ## Architecture decisions
 
 - Content is mirrored from the public Google Site `sites.google.com/view/mssclick-reglement-faction`. Sub-pages are stored as cleaned markdown in `src/data/reglement.ts` and rendered generically; only the accueil page is bespoke JSX.
 - Global search (topbar) filters the sidebar nav by page title; on accueil it also filters the accordions — both read the shared SearchContext.
 - Source content emojis (faction rank symbols ☠️⚔️ etc.) are kept intact because they carry meaning, despite the general "no emojis in UI chrome" rule.
-- Dark mode only; all gold/yellow from the reference replaced with red.
-- Visual direction is "Décret du Ministère" — an editorial obsidian codex: Playfair Display titles + Spectral serif body, warm bone ink on near-black, deep wax-seal crimson accents, hairline dividers, Roman-numeral decrees. Deliberately NO neon glow / blurred gradient blobs (user rejected the earlier "template IA" look).
+- Dark mode only. Visual direction copied "à 100%" from a user reference screenshot: black + gold (warm amber), modern sans-serif (Inter body, Poppins headings/labels), full-width topbar, icon-only left rail, gold accordion cards (book icon + white bold label + chevron). This SUPERSEDES the earlier red/serif "Décret du Ministère" direction, which the user rejected as "trop ancien".
+- Do NOT reproduce the reference server's dragon logo (someone else's brand) — use a generic gold Lucide emblem + "Règlement Faction" wordmark.
 
 ## Product
 
-Single dark, atmospheric rules-reference site (French) for the MSSClick Ministère FiveM faction. Left sidebar navigates 4 rule categories (Notions de Bases, Notions RPG, Notions PVP/PVE, Factions) plus the accueil règlement. Each page shows the faction rules; topbar has search + external links (Discord, Site du Ministère).
+Single dark rules-reference site (French) for the MSSClick FiveM faction, branded "Règlement Faction". Left icon rail navigates 4 rule categories (Notions de Bases, Notions RPG, Notions PVP/PVE, Factions) via flyout panels, plus the accueil règlement. Each page shows the faction rules; topbar has search + Discord/social links.
 
 ## User preferences
 
 - Répondre en français ; l'utilisateur est non-technique.
-- Thème noir/gris/blanc/rouge, dark mode only. Remplacer tout or/jaune par du rouge.
+- Thème NOIR + OR (or chaud/ambré), dark mode only, police moderne sans-serif. (Remplace l'ancienne consigne rouge + serif, rejetée comme "trop ancien".)
+- Copier fidèlement la référence visuelle fournie ; le contenu des règles (HP MSSClick) reste inchangé.
 - Reproduire fidèlement le contenu du site Google source (toutes les pages/menus déroulants).
 
 ## Gotchas
