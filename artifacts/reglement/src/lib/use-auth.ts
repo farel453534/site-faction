@@ -129,3 +129,87 @@ export function useAdminPlayerStats(userId: string | null) {
     retry: false,
   });
 }
+
+export interface AdminEntry {
+  discordId: string;
+  label: string | null;
+  source: "env" | "db";
+  removable: boolean;
+  createdAt: string | null;
+}
+
+interface AdminListResponse {
+  admins: AdminEntry[];
+  dbConfigured: boolean;
+  currentUserId: string | null;
+}
+
+export function useAdminList(enabled: boolean) {
+  return useQuery<AdminListResponse>({
+    queryKey: ["admin", "admins"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/admin/admins`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger les administrateurs");
+      return (await res.json()) as AdminListResponse;
+    },
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
+const ADMIN_ERRORS: Record<string, string> = {
+  invalid_id: "L'identifiant Discord n'est pas valide (chiffres uniquement).",
+  already_env_admin:
+    "Cet utilisateur est déjà administrateur via la configuration.",
+  env_admin_protected:
+    "Cet administrateur est protégé et ne peut pas être retiré ici.",
+  db_unavailable:
+    "La base de données n'est pas configurée sur ce serveur.",
+};
+
+function adminErrorMessage(code: string | undefined): string {
+  return (code && ADMIN_ERRORS[code]) || "Une erreur est survenue.";
+}
+
+export function useAddAdmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { discordId: string; label?: string }) => {
+      const res = await fetch(`${API_BASE}/api/admin/admins`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(adminErrorMessage(data.error));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "admins"] });
+    },
+  });
+}
+
+export function useRemoveAdmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (discordId: string) => {
+      const res = await fetch(
+        `${API_BASE}/api/admin/admins/${encodeURIComponent(discordId)}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(adminErrorMessage(data.error));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "admins"] });
+    },
+  });
+}

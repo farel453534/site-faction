@@ -9,15 +9,26 @@ import {
   Calendar,
   Search,
   X,
+  Users,
+  UserPlus,
+  Trash2,
+  Shield,
+  Loader2,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import {
   useAuth,
   useAdminPlayers,
   useAdminPlayerStats,
+  useAdminList,
+  useAddAdmin,
+  useRemoveAdmin,
   type LeaderboardEntry,
   type CaptureEntry,
+  type AdminEntry,
 } from "@/lib/use-auth";
+
+type AdminTab = "stats" | "admins";
 
 function playerName(p: { displayName: string | null; userId: string }): string {
   if (p.displayName) return p.displayName;
@@ -30,6 +41,7 @@ export default function Admin() {
   const players = useAdminPlayers(!!user && isAdmin);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [tab, setTab] = useState<AdminTab>("stats");
   const detail = useAdminPlayerStats(selected);
 
   const filtered = useMemo(() => {
@@ -106,7 +118,7 @@ export default function Admin() {
         <span>Accueil</span>
       </Link>
 
-      <header className="flex items-center gap-4 mb-8">
+      <header className="flex items-center gap-4 mb-6">
         <span className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
           <ShieldCheck className="w-7 h-7 text-primary" />
         </span>
@@ -115,72 +127,108 @@ export default function Admin() {
             Administration
           </p>
           <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
-            Statistiques des joueurs
+            {tab === "stats"
+              ? "Statistiques des joueurs"
+              : "Gestion des administrateurs"}
           </h1>
         </div>
       </header>
 
-      <div className="relative mb-6 max-w-md">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un joueur (nom ou ID)…"
-          className="w-full rounded-full bg-white/[0.04] border border-white/10 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
-        />
+      <div className="flex items-center gap-1 mb-8 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit">
+        <button
+          type="button"
+          onClick={() => setTab("stats")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            tab === "stats"
+              ? "bg-primary/90 text-primary-foreground"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <Trophy className="w-4 h-4" />
+          Joueurs
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("admins")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            tab === "admins"
+              ? "bg-primary/90 text-primary-foreground"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Administrateurs
+        </button>
       </div>
 
-      {players.isLoading && (
-        <div className="h-64 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
-      )}
-
-      {players.isError && (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
-          Impossible de charger le classement pour le moment. Réessaie plus tard.
-        </div>
-      )}
-
-      {players.data && (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-          <div className="grid grid-cols-[3rem_1fr_auto_auto] gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
-            <span>#</span>
-            <span>Joueur</span>
-            <span className="text-right">Réputation</span>
-            <span className="text-right pl-3">Captures</span>
+      {tab === "stats" && (
+        <>
+          <div className="relative mb-6 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un joueur (nom ou ID)…"
+              className="w-full rounded-full bg-white/[0.04] border border-white/10 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
+            />
           </div>
-          {filtered.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-foreground/50">
-              Aucun joueur trouvé.
-            </p>
-          ) : (
-            <ul>
-              {filtered.map((p) => (
-                <li key={p.userId}>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(p.userId)}
-                    className="grid w-full grid-cols-[3rem_1fr_auto_auto] gap-3 px-4 py-3 items-center border-b border-white/[0.04] last:border-b-0 text-left hover:bg-white/[0.03] transition-colors"
-                  >
-                    <span className="font-serif font-bold text-primary">
-                      {p.rank}
-                    </span>
-                    <span className="truncate text-foreground font-medium">
-                      {playerName(p)}
-                    </span>
-                    <span className="text-right text-foreground/80 tabular-nums">
-                      {p.points.toLocaleString("fr-FR")}
-                    </span>
-                    <span className="text-right pl-3 text-foreground/60 tabular-nums">
-                      {p.captures}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+
+          {players.isLoading && (
+            <div className="h-64 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
           )}
-        </div>
+
+          {players.isError && (
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
+              Impossible de charger le classement pour le moment. Réessaie plus
+              tard.
+            </div>
+          )}
+
+          {players.data && (
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+              <div className="grid grid-cols-[3rem_1fr_auto_auto] gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
+                <span>#</span>
+                <span>Joueur</span>
+                <span className="text-right">Réputation</span>
+                <span className="text-right pl-3">Captures</span>
+              </div>
+              {filtered.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-foreground/50">
+                  Aucun joueur trouvé.
+                </p>
+              ) : (
+                <ul>
+                  {filtered.map((p) => (
+                    <li key={p.userId}>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(p.userId)}
+                        className="grid w-full grid-cols-[3rem_1fr_auto_auto] gap-3 px-4 py-3 items-center border-b border-white/[0.04] last:border-b-0 text-left hover:bg-white/[0.03] transition-colors"
+                      >
+                        <span className="font-serif font-bold text-primary">
+                          {p.rank}
+                        </span>
+                        <span className="truncate text-foreground font-medium">
+                          {playerName(p)}
+                        </span>
+                        <span className="text-right text-foreground/80 tabular-nums">
+                          {p.points.toLocaleString("fr-FR")}
+                        </span>
+                        <span className="text-right pl-3 text-foreground/60 tabular-nums">
+                          {p.captures}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
       )}
+
+      {tab === "admins" && <AdminsManager currentUserId={user.id} />}
 
       {selectedPlayer && (
         <PlayerDetail
@@ -303,6 +351,191 @@ function CaptureRow({ entry }: { entry: CaptureEntry }) {
             {entry.lieu}
           </span>
         </div>
+      )}
+    </li>
+  );
+}
+
+function AdminsManager({ currentUserId }: { currentUserId: string }) {
+  const list = useAdminList(true);
+  const addAdmin = useAddAdmin();
+  const removeAdmin = useRemoveAdmin();
+  const [discordId, setDiscordId] = useState("");
+  const [label, setLabel] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const dbConfigured = list.data?.dbConfigured ?? true;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    const id = discordId.trim();
+    if (!/^\d{15,25}$/.test(id)) {
+      setFormError("L'identifiant Discord doit contenir uniquement des chiffres (15 à 25).");
+      return;
+    }
+    addAdmin.mutate(
+      { discordId: id, label: label.trim() || undefined },
+      {
+        onSuccess: () => {
+          setDiscordId("");
+          setLabel("");
+        },
+        onError: (err) => setFormError((err as Error).message),
+      },
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="flex items-center gap-2 text-primary mb-1">
+          <UserPlus className="w-4 h-4" />
+          <h2 className="font-serif text-sm font-semibold uppercase tracking-[0.16em]">
+            Ajouter un administrateur
+          </h2>
+        </div>
+        <p className="text-sm text-foreground/55 mb-4 leading-relaxed">
+          Colle l'identifiant Discord (clic droit sur le profil → « Copier l'ID
+          utilisateur », mode développeur activé). Un nom facultatif aide à s'y
+          retrouver.
+        </p>
+
+        {!dbConfigured && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground/80 mb-4">
+            La base de données n'est pas encore configurée sur ce serveur.
+            L'ajout d'administrateurs depuis le site sera disponible une fois la
+            base de données branchée.
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={discordId}
+              onChange={(e) => setDiscordId(e.target.value)}
+              placeholder="Identifiant Discord (ex. 123456789012345678)"
+              disabled={!dbConfigured}
+              className="flex-1 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors disabled:opacity-50"
+            />
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Nom (facultatif)"
+              disabled={!dbConfigured}
+              className="sm:w-48 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors disabled:opacity-50"
+            />
+          </div>
+          {formError && (
+            <p className="text-sm text-destructive">{formError}</p>
+          )}
+          <button
+            type="submit"
+            disabled={!dbConfigured || addAdmin.isPending}
+            className="inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground font-semibold px-5 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {addAdmin.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <UserPlus className="w-4 h-4" />
+            )}
+            Ajouter
+          </button>
+        </form>
+      </div>
+
+      {list.isLoading && (
+        <div className="h-40 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      )}
+
+      {list.isError && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
+          Impossible de charger la liste des administrateurs.
+        </div>
+      )}
+
+      {list.data && (
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+          <div className="px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
+            Administrateurs actuels ({list.data.admins.length})
+          </div>
+          <ul>
+            {list.data.admins.map((a) => (
+              <AdminRow
+                key={a.discordId}
+                admin={a}
+                isSelf={a.discordId === currentUserId}
+                onRemove={() => removeAdmin.mutate(a.discordId)}
+                removing={
+                  removeAdmin.isPending &&
+                  removeAdmin.variables === a.discordId
+                }
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminRow({
+  admin,
+  isSelf,
+  onRemove,
+  removing,
+}: {
+  admin: AdminEntry;
+  isSelf: boolean;
+  onRemove: () => void;
+  removing: boolean;
+}) {
+  return (
+    <li className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.04] last:border-b-0">
+      <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+        <Shield className="w-4 h-4 text-primary" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-foreground truncate">
+            {admin.label || `Admin ${admin.discordId.slice(-4)}`}
+          </span>
+          {admin.source === "env" && (
+            <span className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] rounded-full bg-primary/15 text-primary px-2 py-0.5">
+              Principal
+            </span>
+          )}
+          {isSelf && (
+            <span className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] rounded-full bg-white/10 text-foreground/70 px-2 py-0.5">
+              Vous
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-foreground/45 font-mono truncate">
+          {admin.discordId}
+        </p>
+      </div>
+      {admin.removable ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={removing}
+          aria-label="Retirer cet administrateur"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 disabled:opacity-50"
+        >
+          {removing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+        </button>
+      ) : (
+        <span className="text-[0.62rem] text-foreground/35 uppercase tracking-[0.12em] shrink-0 pr-1">
+          Config
+        </span>
       )}
     </li>
   );

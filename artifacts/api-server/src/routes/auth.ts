@@ -102,7 +102,7 @@ router.get("/auth/discord/callback", async (req, res) => {
   }
 });
 
-router.get("/auth/me", (req, res) => {
+router.get("/auth/me", async (req, res) => {
   const user = readSession(req);
   if (!user) {
     return res.status(401).json({ authenticated: false });
@@ -115,7 +115,7 @@ router.get("/auth/me", (req, res) => {
       displayName: user.global_name || user.username,
       avatarUrl: buildAvatarUrl(user),
     },
-    isAdmin: isAdmin(user.id),
+    isAdmin: await isAdmin(user.id),
   });
 });
 

@@ -1,3 +1,3 @@
 - [Discord OAuth + Railway](discord-oauth-railway.md) — custom end-user Discord login (Replit connector is owner-only); env contract for cross-origin Railway Option B.
 - [Game DB player stats](game-db-stats.md) — bot's multi-guild Postgres (GAME_DATABASE_URL); scope every query by faction guild_id; reputation=réputation, recensement=captures.
-- [Admin access model](admin-access.md) — Étape 1 admins via env var ADMIN_DISCORD_IDS (must set on Railway); staged roadmap (stats → DB admin mgmt → règlement CMS).
+- [Admin access model](admin-access.md) — env bootstrap admins (ADMIN_DISCORD_IDS) + DB admins table; isAdmin async; NEVER import root @workspace/db in api-server (throws w/o DATABASE_URL) — use @workspace/db/schema + lazy app-db.ts.

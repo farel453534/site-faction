@@ -1,7 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
+import { eq } from "drizzle-orm";
+import { adminsTable, type Admin } from "@workspace/db/schema";
 import { readSession, type AuthedRequest } from "./session";
+import { getAppDb } from "./app-db";
 
-export function getAdminIds(): Set<string> {
+// Bootstrap super-admins from env (comma/space separated Discord IDs). These are
+// always admins and cannot be removed from the site — they prevent lockout and
+// work even before the app DB is provisioned.
+export function getEnvAdminIds(): Set<string> {
   const raw = process.env["ADMIN_DISCORD_IDS"] ?? "";
   return new Set(
     raw
@@ -11,24 +17,68 @@ export function getAdminIds(): Set<string> {
   );
 }
 
-export function isAdmin(discordId: string): boolean {
-  return getAdminIds().has(discordId);
+export function isEnvAdmin(discordId: string): boolean {
+  return getEnvAdminIds().has(discordId);
 }
 
-export function requireAdmin(
+export async function isAdmin(discordId: string): Promise<boolean> {
+  if (isEnvAdmin(discordId)) return true;
+  const db = getAppDb();
+  if (!db) return false;
+  try {
+    const rows = await db
+      .select({ id: adminsTable.discordId })
+      .from(adminsTable)
+      .where(eq(adminsTable.discordId, discordId))
+      .limit(1);
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function requireAdmin(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   const user = readSession(req);
   if (!user) {
     res.status(401).json({ authenticated: false });
     return;
   }
-  if (!isAdmin(user.id)) {
+  if (!(await isAdmin(user.id))) {
     res.status(403).json({ error: "forbidden" });
     return;
   }
   (req as AuthedRequest).user = user;
   next();
+}
+
+export async function listDbAdmins(): Promise<Admin[]> {
+  const db = getAppDb();
+  if (!db) return [];
+  return db.select().from(adminsTable).orderBy(adminsTable.createdAt);
+}
+
+export async function addAdmin(
+  discordId: string,
+  label: string | null,
+  addedBy: string,
+): Promise<void> {
+  const db = getAppDb();
+  if (!db) throw new Error("DB_UNAVAILABLE");
+  await db
+    .insert(adminsTable)
+    .values({ discordId, label, addedBy })
+    .onConflictDoUpdate({
+      target: adminsTable.discordId,
+      set: { label },
+    });
+}
+
+export async function removeAdmin(discordId: string): Promise<void> {
+  const db = getAppDb();
+  if (!db) throw new Error("DB_UNAVAILABLE");
+  await db.delete(adminsTable).where(eq(adminsTable.discordId, discordId));
 }
