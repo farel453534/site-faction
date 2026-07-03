@@ -29,7 +29,7 @@ A dark, atmospheric single-page rules reference site for a Harry Potter roleplay
 - `src/pages/RulePageView.tsx` — generic markdown page (react-markdown + remark-gfm + tailwind typography).
 - `src/data/reglement.ts` — SOURCE OF TRUTH for all sub-page content (4 groups, 23 pages), scraped/cleaned markdown.
 - `src/lib/search-context.tsx` — global search state.
-- `src/index.css` — theme vars, red palette, fonts (Cormorant Garamond serif), accordion keyframes.
+- `src/index.css` — theme vars, red palette, fonts (Playfair Display display + Spectral body), utilities (`.eyebrow`, `.letterpress`, `.bg-vignette`, `.bg-texture`, `.ornament`), accordion keyframes.
 
 ## Architecture decisions
 
@@ -37,6 +37,7 @@ A dark, atmospheric single-page rules reference site for a Harry Potter roleplay
 - Global search (topbar) filters the sidebar nav by page title; on accueil it also filters the accordions — both read the shared SearchContext.
 - Source content emojis (faction rank symbols ☠️⚔️ etc.) are kept intact because they carry meaning, despite the general "no emojis in UI chrome" rule.
 - Dark mode only; all gold/yellow from the reference replaced with red.
+- Visual direction is "Décret du Ministère" — an editorial obsidian codex: Playfair Display titles + Spectral serif body, warm bone ink on near-black, deep wax-seal crimson accents, hairline dividers, Roman-numeral decrees. Deliberately NO neon glow / blurred gradient blobs (user rejected the earlier "template IA" look).
 
 ## Product
 
