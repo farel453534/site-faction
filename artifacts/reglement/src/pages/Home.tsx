@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Accordion, 
   AccordionContent, 
@@ -6,11 +6,33 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, ChevronRight, Menu, Discord, Home as HomeIcon, ScrollText, User, Users, BookOpen } from "lucide-react";
+import { Search, ChevronRight, Home as HomeIcon, ScrollText, User, Users, BookOpen } from "lucide-react";
 import { FaDiscord } from "react-icons/fa";
 import { SiRoblox } from "react-icons/si";
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+
+  const sections: Record<string, string> = {
+    "item-1": "Fiche de suivie suivi ck",
+    "item-2": "Le FearRP peur fear",
+    "item-3": "Le PainRP douleur pain",
+    "item-4": "NLR New Life Rule mort coma",
+    "item-5": "Le FairPlay fair play",
+    "item-6": "Les Temps de RP couvre feu horaires temps",
+    "item-7": "Les Sanctions drapeau rouge noir hrp rp staff",
+    "item-8": "Les eleves eleves capture foret quidditch",
+  };
+  const q = query.trim().toLowerCase();
+  const visible = (v: string) => q === "" || sections[v].toLowerCase().includes(q);
+  const anyVisible = Object.keys(sections).some(visible);
+
+  const scrollToTop = () => {
+    document
+      .querySelector("[data-radix-scroll-area-viewport]")
+      ?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="flex h-screen w-full bg-background bg-texture overflow-hidden selection:bg-primary/30 selection:text-primary">
       
@@ -20,18 +42,18 @@ export default function Home() {
           <BookOpen className="w-5 h-5" />
         </div>
         <nav className="flex flex-col gap-6 w-full items-center mt-4">
-          <button className="text-muted-foreground hover:text-primary transition-colors">
+          <button onClick={scrollToTop} title="Haut de page" className="text-muted-foreground hover:text-primary transition-colors">
             <HomeIcon className="w-5 h-5" />
           </button>
-          <button className="text-primary transition-colors border-r-2 border-primary w-full flex justify-center">
+          <button onClick={scrollToTop} title="Règlement" className="text-primary transition-colors border-r-2 border-primary w-full flex justify-center">
             <ScrollText className="w-5 h-5" />
           </button>
-          <button className="text-muted-foreground hover:text-primary transition-colors">
+          <a href="https://discord.gg/mssclick" target="_blank" rel="noreferrer" title="Discord" className="text-muted-foreground hover:text-primary transition-colors">
             <User className="w-5 h-5" />
-          </button>
-          <button className="text-muted-foreground hover:text-primary transition-colors">
+          </a>
+          <a href="https://sites.google.com/view/ministeremssclick/accueil" target="_blank" rel="noreferrer" title="Site du Ministère" className="text-muted-foreground hover:text-primary transition-colors">
             <Users className="w-5 h-5" />
-          </button>
+          </a>
         </nav>
       </aside>
 
@@ -53,7 +75,9 @@ export default function Home() {
               </div>
               <input 
                 type="search" 
-                placeholder="Recherche réservée au staff..." 
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Rechercher une règle..." 
                 className="w-64 bg-secondary/50 border border-border rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all text-foreground placeholder:text-muted-foreground"
               />
             </div>
@@ -65,14 +89,14 @@ export default function Home() {
                 <FaDiscord className="w-5 h-5" />
                 <span className="hidden sm:inline">Discord</span>
               </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
+              <a href="https://sites.google.com/view/ministeremssclick/accueil" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
                 <SiRoblox className="w-4 h-4" />
                 <span className="hidden sm:inline">Site du Ministère</span>
               </a>
             </div>
-            <button className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-primary-foreground px-6 py-2 rounded-md text-sm font-semibold transition-all red-glow uppercase tracking-wider">
+            <a href="https://discord.gg/mssclick" target="_blank" rel="noreferrer" className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-primary-foreground px-6 py-2 rounded-md text-sm font-semibold transition-all red-glow uppercase tracking-wider">
               Se connecter
-            </button>
+            </a>
           </div>
         </header>
 
@@ -103,7 +127,7 @@ export default function Home() {
             {/* Accordions */}
             <Accordion type="single" collapsible className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
               
-              <AccordionItem value="item-1" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-1" hidden={!visible("item-1")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -122,7 +146,7 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-2" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-2" hidden={!visible("item-2")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -144,7 +168,7 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-3" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-3" hidden={!visible("item-3")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -161,7 +185,7 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-4" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-4" hidden={!visible("item-4")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -183,7 +207,7 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-5" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-5" hidden={!visible("item-5")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -203,7 +227,7 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-6" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-6" hidden={!visible("item-6")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -224,7 +248,7 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-7" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-7" hidden={!visible("item-7")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -290,7 +314,7 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-8" className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
+              <AccordionItem value="item-8" hidden={!visible("item-8")} className="border border-border bg-card rounded-lg overflow-hidden data-[state=open]:border-primary/50 transition-colors">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50 transition-colors group">
                   <div className="flex items-center gap-4 text-left">
                     <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
@@ -332,6 +356,12 @@ export default function Home() {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {!anyVisible && (
+              <div className="text-center text-muted-foreground py-16 text-lg">
+                Aucune règle ne correspond à votre recherche.
+              </div>
+            )}
 
           </div>
         </ScrollArea>
