@@ -1,0 +1,1 @@
+- [Tailwind v4 accordion animations](tailwind-v4-accordion.md) — shadcn/Radix accordion won't expand unless you manually define `accordion-down/up` keyframes + `--animate-*` vars in index.css.
