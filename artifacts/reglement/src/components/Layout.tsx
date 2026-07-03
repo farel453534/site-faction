@@ -16,7 +16,8 @@ import type { IconType } from "react-icons";
 import { ruleGroups } from "@/data/reglement";
 import { useSearch } from "@/lib/search-context";
 
-const DISCORD_URL = "https://discord.gg/mssclick";
+const DISCORD_INVITE = "https://discord.gg/TaqPhgNeM4";
+const SHOP_URL = "https://mssclick.tebex.io/category/grades";
 
 const groupIcons: Record<string, typeof House> = {
   "notions-de-bases": BookOpen,
@@ -26,10 +27,10 @@ const groupIcons: Record<string, typeof House> = {
 };
 
 const socials: { icon: IconType; label: string; href: string }[] = [
-  { icon: FaCartShopping, label: "Boutique", href: DISCORD_URL },
-  { icon: FaXTwitter, label: "X", href: DISCORD_URL },
-  { icon: FaYoutube, label: "YouTube", href: DISCORD_URL },
-  { icon: FaTiktok, label: "TikTok", href: DISCORD_URL },
+  { icon: FaCartShopping, label: "Boutique", href: SHOP_URL },
+  { icon: FaXTwitter, label: "X", href: DISCORD_INVITE },
+  { icon: FaYoutube, label: "YouTube", href: DISCORD_INVITE },
+  { icon: FaTiktok, label: "TikTok", href: DISCORD_INVITE },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -143,7 +144,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {/* Right side */}
         <div className="flex items-center gap-2 md:gap-3 ml-auto">
           <a
-            href={DISCORD_URL}
+            href={DISCORD_INVITE}
             target="_blank"
             rel="noreferrer"
             className="hidden sm:flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 px-3.5 py-2 text-sm text-foreground hover:border-primary/50 transition-colors"
@@ -169,7 +170,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <a
-            href={DISCORD_URL}
+            href={DISCORD_INVITE}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 pl-2 pr-4 py-1.5 text-sm text-foreground hover:border-primary/50 transition-colors"
