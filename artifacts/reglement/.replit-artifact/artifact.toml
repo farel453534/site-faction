@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Règlement Faction"
+version = "1.0.0"
+id = "artifacts/reglement"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18985
+
+[services.development]
+run = "pnpm --filter @workspace/reglement run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/reglement", "run", "build" ]
+publicDir = "artifacts/reglement/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18985"
+BASE_PATH = "/"

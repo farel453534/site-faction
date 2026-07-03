@@ -1,6 +1,6 @@
-# [Project name]
+# Règlement Faction — MSSClick Ministère
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A dark, atmospheric single-page rules reference site for a Harry Potter roleplay FiveM server faction. Displays the full faction règlement in expandable accordion sections. Theme: black/gray/white/red.
 
 ## Run & Operate
 
