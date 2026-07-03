@@ -12,7 +12,8 @@ Separate from the app's own DB. Connection string in secret `GAME_DATABASE_URL` 
 ## Tables that matter for user stats
 
 - `reputation` (guild_id, user_id, points:int, updated_at, display_name) = **réputation**. `user_id` is the Discord user ID. Some rows use a synthetic `user_id` like `nom:...` (manual, won't match a real login) — fine, they just won't match.
-- `recensement` (guild_id, user_id, user_name, date_event, lieu, victime, agresseur, capture_numero, submitted_at, ...) = **captures**. `user_id` = the Discord ID of the **submitter/capturer**. `agresseur` = role/faction name, `victime` = a Discord mention string `<@123…>` (strip it for display), `capture_numero` = a per-guild counter.
+- `recensement` (guild_id, user_id, user_name, date_event, lieu, victime, agresseur, capture_numero, submitted_at, ...) = **captures**. `user_id` = the Discord ID of the **submitter** (who typed the record — NOT the capturer). `agresseur` = a **role/faction name string** (e.g. "Auror", "Vampire", "Mangemort"), NOT a Discord ID. `victime` = a Discord mention string `<@123…>` (or `<@!123…>`) = the **person who got captured**. `capture_numero` = per-victim counter.
+- **"Captures a person HAS" = times they were CAPTURED = rows where `victime = '<@'||id||'>'` (also match `<@!`), NOT `user_id = id`.** `user_id` counts records they merely submitted — the user explicitly rejected that. `agresseur` cannot be matched to a login (it's a role name), so the profile shows "Capturé par {agresseur}".
 - `reputation_history` (guild_id, user_id, delta, new_total, reason, author_id, created_at) = audit log of réputation changes (not yet surfaced).
 
 **Why:** a logged-in Discord user's stats = their own `reputation.points` (rank = count of guild members with strictly more points, +1) and their `recensement` rows, both filtered by the faction guild_id.

@@ -64,7 +64,8 @@ export async function getPlayerStats(discordId: string): Promise<PlayerStats> {
   }
 
   const capCountRes = await db.query<{ n: number }>(
-    `SELECT COUNT(*)::int AS n FROM recensement WHERE guild_id = $1 AND user_id = $2`,
+    `SELECT COUNT(*)::int AS n FROM recensement
+     WHERE guild_id = $1 AND (victime = '<@' || $2 || '>' OR victime = '<@!' || $2 || '>')`,
     [guildId, discordId],
   );
   const captureCount = capCountRes.rows[0]?.n ?? 0;
@@ -79,7 +80,7 @@ export async function getPlayerStats(discordId: string): Promise<PlayerStats> {
   }>(
     `SELECT capture_numero, date_event, lieu, victime, agresseur, submitted_at
      FROM recensement
-     WHERE guild_id = $1 AND user_id = $2
+     WHERE guild_id = $1 AND (victime = '<@' || $2 || '>' OR victime = '<@!' || $2 || '>')
      ORDER BY submitted_at DESC
      LIMIT 10`,
     [guildId, discordId],

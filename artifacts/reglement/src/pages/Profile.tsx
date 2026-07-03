@@ -10,12 +10,6 @@ import {
 import { FaDiscord } from "react-icons/fa6";
 import { useAuth, usePlayerStats, type CaptureEntry } from "@/lib/use-auth";
 
-function cleanMention(value: string | null): string {
-  if (!value) return "—";
-  const cleaned = value.replace(/<@!?\d+>/g, "").trim();
-  return cleaned.length > 0 ? cleaned : "Cible masquée";
-}
-
 export default function Profile() {
   const { user, isLoading: authLoading, login } = useAuth();
   const stats = usePlayerStats(!!user);
@@ -119,8 +113,8 @@ export default function Profile() {
               value={stats.data.captures.count.toLocaleString("fr-FR")}
               hint={
                 stats.data.captures.count > 0
-                  ? "Recensements enregistrés"
-                  : "Aucun recensement"
+                  ? "Fois capturé"
+                  : "Jamais capturé"
               }
             />
           </div>
@@ -179,7 +173,7 @@ function CaptureRow({ entry }: { entry: CaptureEntry }) {
     <li className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
       <div className="flex items-center justify-between gap-3 mb-1.5">
         <span className="font-semibold text-foreground">
-          {entry.agresseur ? entry.agresseur : "Capture"}
+          {entry.agresseur ? `Capturé par ${entry.agresseur}` : "Capture"}
           {entry.captureNumero ? (
             <span className="text-primary"> #{entry.captureNumero}</span>
           ) : null}
@@ -191,18 +185,14 @@ function CaptureRow({ entry }: { entry: CaptureEntry }) {
           </span>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/65">
-        <span>
-          Victime :{" "}
-          <span className="text-foreground/85">{cleanMention(entry.victime)}</span>
-        </span>
-        {entry.lieu && (
+      {entry.lieu && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/65">
           <span className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-primary/70" />
             {entry.lieu}
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </li>
   );
 }
