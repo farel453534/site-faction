@@ -16,9 +16,9 @@ import {
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
-import { ruleGroups } from "@/data/reglement";
 import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/use-auth";
+import { useContent } from "@/lib/use-content";
 
 const DISCORD_INVITE = "https://discord.gg/TaqPhgNeM4";
 const SHOP_URL = "https://mssclick.tebex.io/category/grades";
@@ -40,6 +40,8 @@ const socials: { icon: IconType; label: string; href: string }[] = [
 export default function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { query, setQuery } = useSearch();
+  const { data: content } = useContent();
+  const ruleGroups = content?.groups ?? [];
   const mainRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
   const flyoutRef = useRef<HTMLDivElement | null>(null);
@@ -50,7 +52,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const currentGroupSlug = useMemo(() => {
     const seg = location.split("/").filter(Boolean)[0];
     return ruleGroups.find((g) => g.slug === seg)?.slug ?? null;
-  }, [location]);
+  }, [location, ruleGroups]);
 
   const isHome = location === "/" || location === "";
 

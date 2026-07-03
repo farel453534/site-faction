@@ -1,8 +1,8 @@
 // AUTO-GENERATED from the public MSSClick règlement site. Content preserved verbatim.
-  export type RulePage = { slug: string; title: string; markdown: string };
-  export type RuleGroup = { slug: string; title: string; pages: RulePage[] };
+// Static seed / fallback source of truth. DB overlays edit these at runtime.
+import type { RuleGroup } from "./types";
 
-  export const ruleGroups: RuleGroup[] = [
+export const ruleGroups: RuleGroup[] = [
   {
     "slug": "notions-de-bases",
     "title": "Notions de Bases",
@@ -143,12 +143,3 @@
     ]
   }
 ];
-
-  export function findPage(groupSlug: string, pageSlug: string): { group: RuleGroup; page: RulePage } | null {
-    const group = ruleGroups.find((g) => g.slug === groupSlug);
-    if (!group) return null;
-    const page = group.pages.find((p) => p.slug === pageSlug);
-    if (!page) return null;
-    return { group, page };
-  }
-  
