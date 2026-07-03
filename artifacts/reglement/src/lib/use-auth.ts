@@ -12,6 +12,7 @@ export interface AuthUser {
 interface MeResponse {
   authenticated: boolean;
   user?: AuthUser;
+  isAdmin?: boolean;
 }
 
 export function useAuth() {
@@ -49,6 +50,7 @@ export function useAuth() {
 
   return {
     user: query.data?.authenticated ? (query.data.user ?? null) : null,
+    isAdmin: query.data?.authenticated ? (query.data.isAdmin ?? false) : false,
     isLoading: query.isLoading,
     login,
     logout: () => logoutMutation.mutate(),
@@ -79,6 +81,49 @@ export function usePlayerStats(enabled: boolean) {
       });
       if (!res.ok) throw new Error("Impossible de charger vos statistiques");
       return (await res.json()) as PlayerStats;
+    },
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export interface LeaderboardEntry {
+  userId: string;
+  displayName: string | null;
+  points: number;
+  rank: number;
+  captures: number;
+}
+
+export function useAdminPlayers(enabled: boolean) {
+  return useQuery<LeaderboardEntry[]>({
+    queryKey: ["admin", "players"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/admin/players`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger le classement");
+      const data = (await res.json()) as { players: LeaderboardEntry[] };
+      return data.players;
+    },
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useAdminPlayerStats(userId: string | null) {
+  return useQuery<PlayerStats>({
+    queryKey: ["admin", "player", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const res = await fetch(
+        `${API_BASE}/api/admin/player?userId=${encodeURIComponent(userId ?? "")}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error("Impossible de charger le joueur");
+      const data = (await res.json()) as { userId: string; stats: PlayerStats };
+      return data.stats;
     },
     staleTime: 30_000,
     retry: false,

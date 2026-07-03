@@ -8,6 +8,7 @@ import {
   type DiscordUser,
 } from "../lib/discord";
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
+import { isAdmin } from "../lib/admin";
 
 const router: IRouter = Router();
 
@@ -114,6 +115,7 @@ router.get("/auth/me", (req, res) => {
       displayName: user.global_name || user.username,
       avatarUrl: buildAvatarUrl(user),
     },
+    isAdmin: isAdmin(user.id),
   });
 });
 

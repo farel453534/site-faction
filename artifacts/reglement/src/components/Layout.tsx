@@ -12,6 +12,7 @@ import {
   ChevronRight,
   LogOut,
   User,
+  ShieldCheck,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -301,7 +302,7 @@ function RailButton({
 }
 
 function AuthButton() {
-  const { user, isLoading, login, logout } = useAuth();
+  const { user, isAdmin, isLoading, login, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -371,6 +372,16 @@ function AuthButton() {
             <User className="w-4 h-4" />
             Mon profil
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-white/5 transition-colors border-t border-white/5"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Administration
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => {

@@ -100,3 +100,46 @@ export async function getPlayerStats(discordId: string): Promise<PlayerStats> {
     captures: { count: captureCount, recent },
   };
 }
+
+export interface LeaderboardEntry {
+  userId: string;
+  displayName: string | null;
+  points: number;
+  rank: number;
+  captures: number;
+}
+
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  const db = getPool();
+  const guildId = getGuildId();
+
+  const res = await db.query<{
+    user_id: string;
+    display_name: string | null;
+    points: number;
+    rank: number;
+    captures: number;
+  }>(
+    `SELECT r.user_id, r.display_name, r.points,
+            (RANK() OVER (ORDER BY r.points DESC))::int AS rank,
+            COALESCE(c.n, 0)::int AS captures
+     FROM reputation r
+     LEFT JOIN (
+       SELECT substring(victime from '[0-9]+') AS uid, COUNT(*)::int AS n
+       FROM recensement
+       WHERE guild_id = $1 AND victime ~ '^<@!?[0-9]+>$'
+       GROUP BY 1
+     ) c ON c.uid = r.user_id
+     WHERE r.guild_id = $1
+     ORDER BY r.points DESC, r.user_id ASC`,
+    [guildId],
+  );
+
+  return res.rows.map((r) => ({
+    userId: r.user_id,
+    displayName: r.display_name,
+    points: r.points,
+    rank: r.rank,
+    captures: r.captures,
+  }));
+}

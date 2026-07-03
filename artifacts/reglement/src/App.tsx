@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import RulePageView from "@/pages/RulePageView";
 import Profile from "@/pages/Profile";
+import Admin from "@/pages/Admin";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -17,6 +18,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/profil" component={Profile} />
+      <Route path="/admin" component={Admin} />
       <Route path="/:group/:page" component={RulePageView} />
       <Route component={NotFound} />
     </Switch>
