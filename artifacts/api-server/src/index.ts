@@ -1,6 +1,14 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 
+for (const key of ["SESSION_SECRET", "DISCORD_CLIENT_SECRET"]) {
+  if (!process.env[key]) {
+    throw new Error(
+      `${key} environment variable is required but was not provided.`,
+    );
+  }
+}
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {

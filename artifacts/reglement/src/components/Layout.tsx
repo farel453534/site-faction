@@ -10,11 +10,13 @@ import {
   Sparkles,
   ScrollText,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 import { ruleGroups } from "@/data/reglement";
 import { useSearch } from "@/lib/search-context";
+import { useAuth } from "@/lib/use-auth";
 
 const DISCORD_INVITE = "https://discord.gg/TaqPhgNeM4";
 const SHOP_URL = "https://mssclick.tebex.io/category/grades";
@@ -169,17 +171,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             ))}
           </div>
 
-          <a
-            href={DISCORD_INVITE}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 pl-2 pr-4 py-1.5 text-sm text-foreground hover:border-primary/50 transition-colors"
-          >
-            <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
-              <FaDiscord className="w-3.5 h-3.5 text-primary" />
-            </span>
-            <span className="hidden sm:inline">Se connecter</span>
-          </a>
+          <AuthButton />
         </div>
       </header>
 
@@ -304,5 +296,85 @@ function RailButton({
     <button type="button" onClick={onClick} className={cls} aria-label={label}>
       {inner}
     </button>
+  );
+}
+
+function AuthButton() {
+  const { user, isLoading, login, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="w-28 h-9 rounded-full bg-white/[0.05] border border-white/10 animate-pulse" />
+    );
+  }
+
+  if (!user) {
+    return (
+      <button
+        type="button"
+        onClick={login}
+        className="flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 pl-2 pr-4 py-1.5 text-sm text-foreground hover:border-primary/50 transition-colors"
+      >
+        <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
+          <FaDiscord className="w-3.5 h-3.5 text-primary" />
+        </span>
+        <span className="hidden sm:inline">Se connecter</span>
+      </button>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 pl-1.5 pr-3 py-1.5 text-sm text-foreground hover:border-primary/50 transition-colors"
+      >
+        {user.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt=""
+            className="w-6 h-6 rounded-full object-cover"
+          />
+        ) : (
+          <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
+            <FaDiscord className="w-3.5 h-3.5 text-primary" />
+          </span>
+        )}
+        <span className="hidden sm:inline max-w-[9rem] truncate">
+          {user.displayName}
+        </span>
+        <ChevronRight
+          className={`w-3.5 h-3.5 opacity-50 transition-transform ${
+            open ? "rotate-90" : ""
+          }`}
+        />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-44 bg-popover border border-popover-border rounded-xl shadow-2xl shadow-black/60 overflow-hidden z-40">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              logout();
+            }}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-white/5 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Déconnexion
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
