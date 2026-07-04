@@ -7,6 +7,8 @@ import {
   fetchDiscordUser,
   fetchDiscordGuildMember,
   detectFaction,
+  RESPONSABLE_ID,
+  GERANT_ROLE_ID,
   type DiscordUser,
 } from "../lib/discord";
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
@@ -89,13 +91,16 @@ router.get("/auth/discord/callback", async (req, res) => {
         process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404",
       ).catch(() => null),
     ]);
-    const faction = guildMember ? detectFaction(guildMember.roles) : null;
+    const roles = guildMember?.roles ?? [];
+    const faction = detectFaction(roles);
     const session: SessionUser = {
       id: (user as DiscordUser).id,
       username: (user as DiscordUser).username,
       global_name: (user as DiscordUser).global_name ?? null,
       avatar: (user as DiscordUser).avatar ?? null,
       faction,
+      isResponsable: (user as DiscordUser).id === RESPONSABLE_ID,
+      isGerant: roles.includes(GERANT_ROLE_ID),
     };
     res.cookie(SESSION_COOKIE, JSON.stringify(session), {
       httpOnly: true,
@@ -125,6 +130,8 @@ router.get("/auth/me", async (req, res) => {
       displayName: user.global_name || user.username,
       avatarUrl: buildAvatarUrl(user),
       faction: user.faction ?? null,
+      isResponsable: user.isResponsable ?? false,
+      isGerant: user.isGerant ?? false,
     },
     isAdmin: await isAdmin(user.id),
   });

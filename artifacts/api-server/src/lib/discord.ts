@@ -19,6 +19,12 @@ export interface DiscordUser {
   avatar: string | null;
 }
 
+// The one Responsable (owner/super-admin) — identified by Discord user ID
+export const RESPONSABLE_ID = "1521612399445147829";
+
+// Gérant role ID
+export const GERANT_ROLE_ID = "1062740125605449877";
+
 // Faction role IDs → faction name (order matters: first match wins)
 export const FACTION_ROLES: Array<{ id: string; name: string }> = [
   { id: "1062740125605449874", name: "Mangemort" },

@@ -19,6 +19,34 @@ const FACTION_COLORS: Record<string, string> = {
   Professeur: "bg-amber-950/60 border-amber-700/50 text-amber-300",
 };
 
+function ProfileBadges({ user }: { user: { faction: string | null; isResponsable: boolean; isGerant: boolean } }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-2">
+      {user.isResponsable && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-500/60 bg-yellow-950/50 px-3 py-0.5 text-xs font-bold text-yellow-300 tracking-wide">
+          ⭐ Responsable
+        </span>
+      )}
+      {user.isGerant && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/50 bg-orange-950/50 px-3 py-0.5 text-xs font-semibold text-orange-300">
+          🔑 Gérant
+        </span>
+      )}
+      {user.faction && (
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${FACTION_COLORS[user.faction] ?? "bg-white/5 border-white/10 text-foreground/70"}`}>
+          <ShieldHalf className="w-3 h-3" />
+          {user.faction}
+        </span>
+      )}
+      {!user.isResponsable && !user.isGerant && !user.faction && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-0.5 text-xs text-foreground/40">
+          Aucune faction détectée
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function Profile() {
   const { user, isLoading: authLoading, login } = useAuth();
   const stats = usePlayerStats(!!user);
@@ -86,19 +114,7 @@ export default function Profile() {
           <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
             {user.displayName}
           </h1>
-          {user.faction && (
-            <span
-              className={`inline-flex items-center gap-1.5 mt-2 rounded-full border px-3 py-0.5 text-xs font-semibold ${FACTION_COLORS[user.faction] ?? "bg-white/5 border-white/10 text-foreground/70"}`}
-            >
-              <ShieldHalf className="w-3 h-3" />
-              {user.faction}
-            </span>
-          )}
-          {!user.faction && (
-            <span className="inline-flex items-center gap-1.5 mt-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-0.5 text-xs text-foreground/40">
-              Aucune faction détectée
-            </span>
-          )}
+          <ProfileBadges user={user} />
         </div>
       </header>
 

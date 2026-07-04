@@ -8,6 +8,8 @@ export interface SessionUser {
   global_name: string | null;
   avatar: string | null;
   faction: string | null;
+  isResponsable: boolean;
+  isGerant: boolean;
 }
 
 export interface AuthedRequest extends Request {

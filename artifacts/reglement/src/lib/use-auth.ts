@@ -8,6 +8,8 @@ export interface AuthUser {
   displayName: string;
   avatarUrl: string | null;
   faction: string | null;
+  isResponsable: boolean;
+  isGerant: boolean;
 }
 
 interface MeResponse {
