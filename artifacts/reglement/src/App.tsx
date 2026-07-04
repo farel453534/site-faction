@@ -6,6 +6,7 @@ import { SearchProvider } from "@/lib/search-context";
 import Layout from "@/components/Layout";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import Reglement from "@/pages/Reglement";
 import RulePageView from "@/pages/RulePageView";
 import Profile from "@/pages/Profile";
 import Admin from "@/pages/Admin";
@@ -17,6 +18,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/reglement" component={Reglement} />
       <Route path="/profil" component={Profile} />
       <Route path="/admin" component={Admin} />
       <Route path="/:group/:page" component={RulePageView} />

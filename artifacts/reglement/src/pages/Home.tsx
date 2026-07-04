@@ -1,113 +1,163 @@
-import { useState } from "react";
+import { Link } from "wouter";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { BookOpen, ArrowLeft } from "lucide-react";
-import { useSearch } from "@/lib/search-context";
+  BookOpen,
+  User,
+  ShieldHalf,
+  ArrowRight,
+  ChevronRight,
+  Sparkles,
+  Swords,
+} from "lucide-react";
+import { FaDiscord } from "react-icons/fa6";
+import type { IconType } from "react-icons";
 import { useContent } from "@/lib/use-content";
 import { useAuth } from "@/lib/use-auth";
-import { Prose } from "@/components/Prose";
-import {
-  ContentEditor,
-  EditButton,
-  type EditorTarget,
-} from "@/components/ContentEditor";
+
+const DISCORD_INVITE = "https://discord.gg/TaqPhgNeM4";
+
+const groupIcons: Record<string, typeof BookOpen> = {
+  "notions-de-bases": BookOpen,
+  "notions-rpg": Sparkles,
+  "notions-pvppve": Swords,
+  factions: ShieldHalf,
+};
 
 export default function Home() {
-  const { query } = useSearch();
   const { data: content } = useContent();
-  const { isAdmin } = useAuth();
-  const [editTarget, setEditTarget] = useState<EditorTarget | null>(null);
+  const { user, isAdmin } = useAuth();
 
-  const q = query.trim().toLowerCase();
-  const meta = content?.home.meta ?? { title: "" };
-  const cards = content?.home.cards ?? [];
-  const shown = cards.filter(
-    (c) =>
-      q === "" ||
-      c.keywords.toLowerCase().includes(q) ||
-      c.title.toLowerCase().includes(q),
-  );
+  const groups = content?.groups ?? [];
+
+  const actions: {
+    key: string;
+    title: string;
+    description: string;
+    href: string;
+    external?: boolean;
+    icon: typeof BookOpen | IconType;
+    featured?: boolean;
+  }[] = [
+    {
+      key: "reglement",
+      title: "Consulter le règlement",
+      description: "Toutes les règles RP de la faction, réunies au même endroit.",
+      href: "/reglement",
+      icon: BookOpen,
+      featured: true,
+    },
+    {
+      key: "profil",
+      title: "Gérer mon profil",
+      description: "Ta réputation, tes captures et tes informations Discord.",
+      href: "/profil",
+      icon: User,
+    },
+    {
+      key: "discord",
+      title: "Rejoindre le Discord",
+      description: "Rejoins la communauté et reste informé des annonces.",
+      href: DISCORD_INVITE,
+      external: true,
+      icon: FaDiscord,
+    },
+  ];
+
+  if (isAdmin) {
+    actions.push({
+      key: "admin",
+      title: "Administration",
+      description: "Gérer les administrateurs, le contenu et les statistiques.",
+      href: "/admin",
+      icon: ShieldHalf,
+    });
+  }
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-      {/* Breadcrumb + title */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Règlements</span>
+      {/* Hero */}
+      <div className="mb-10">
+        <div className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-primary mb-3">
+          Panel Faction
         </div>
-        <div className="flex items-start gap-2">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-            {meta.title}
-          </h1>
-          {isAdmin && (
-            <EditButton
-              label="Modifier le titre"
-              onClick={() =>
-                setEditTarget({ kind: "home-meta", title: meta.title })
-              }
-              className="mt-2"
-            />
-          )}
-        </div>
+        <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+          {user ? `Bienvenue, ${user.displayName}` : "Bienvenue"}
+        </h1>
+        <p className="text-foreground/60 mt-3 max-w-2xl leading-relaxed">
+          Ton espace pour la faction : consulte le règlement, gère ton profil
+          et accède à tout ce dont tu as besoin.
+        </p>
       </div>
 
-      {/* Accordion cards */}
-      <Accordion type="single" collapsible className="w-full space-y-2.5">
-        {shown.map((card) => (
-          <AccordionItem
-            key={card.key}
-            value={card.key}
-            className="border border-white/[0.07] bg-white/[0.03] rounded-xl overflow-hidden transition-colors hover:bg-white/[0.05] data-[state=open]:border-primary/30 data-[state=open]:bg-white/[0.04]"
-          >
-            <AccordionTrigger className="px-5 py-4 hover:no-underline group [&>svg]:text-muted-foreground">
-              <div className="flex items-center gap-3.5 text-left flex-1">
-                <BookOpen className="w-5 h-5 text-primary shrink-0" />
-                <span className="font-serif text-[1.05rem] font-semibold text-foreground group-data-[state=open]:text-primary transition-colors">
-                  {card.title}
-                </span>
-                {isAdmin && (
-                  <EditButton
-                    label="Modifier la carte"
-                    onClick={() =>
-                      setEditTarget({
-                        kind: "home-card",
-                        key: card.key,
-                        title: card.title,
-                        keywords: card.keywords,
-                        markdown: card.markdown,
-                      })
-                    }
-                    className="ml-auto mr-1"
-                  />
-                )}
+      {/* Action cards */}
+      <div className="grid gap-4 sm:grid-cols-2 mb-12">
+        {actions.map((a) => {
+          const Icon = a.icon;
+          const cardClass = a.featured
+            ? "sm:col-span-2 group flex items-center gap-5 rounded-2xl border border-primary/30 bg-primary/[0.06] p-6 transition-colors hover:bg-primary/[0.1] hover:border-primary/50"
+            : "group flex items-center gap-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 transition-colors hover:bg-white/[0.05] hover:border-primary/30";
+          const inner = (
+            <>
+              <span className="w-12 h-12 shrink-0 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+                <Icon className="w-6 h-6" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-serif text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                  {a.title}
+                </h2>
+                <p className="text-foreground/55 text-sm mt-1 leading-snug">
+                  {a.description}
+                </p>
               </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-5 pb-6 pt-0">
-              <div className="ml-[2.15rem] border-l border-white/10 pl-5">
-                <Prose markdown={card.markdown} />
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+              <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+            </>
+          );
+          return a.external ? (
+            <a
+              key={a.key}
+              href={a.href}
+              target="_blank"
+              rel="noreferrer"
+              className={cardClass}
+            >
+              {inner}
+            </a>
+          ) : (
+            <Link key={a.key} href={a.href} className={cardClass}>
+              {inner}
+            </Link>
+          );
+        })}
+      </div>
 
-      {shown.length === 0 && (
-        <div className="text-center text-muted-foreground py-16">
-          Aucune règle ne correspond à votre recherche.
-        </div>
-      )}
-
-      {isAdmin && editTarget && (
-        <ContentEditor
-          open={!!editTarget}
-          onOpenChange={(v) => !v && setEditTarget(null)}
-          target={editTarget}
-        />
+      {/* Rule categories */}
+      {groups.length > 0 && (
+        <section>
+          <h2 className="font-serif text-lg font-semibold text-primary mb-4">
+            Catégories du règlement
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {groups.map((group) => {
+              const Icon = groupIcons[group.slug] ?? BookOpen;
+              const first = group.pages[0];
+              const href = first
+                ? `/${group.slug}/${first.slug}`
+                : "/reglement";
+              return (
+                <Link
+                  key={group.slug}
+                  href={href}
+                  className="group flex items-center gap-3.5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3.5 transition-colors hover:bg-white/[0.05] hover:border-primary/25"
+                >
+                  <Icon className="w-5 h-5 text-primary shrink-0" />
+                  <span className="flex-1 font-medium text-foreground group-hover:text-primary transition-colors">
+                    {group.title}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
       )}
     </div>
   );
