@@ -5,6 +5,8 @@ import {
   buildAvatarUrl,
   exchangeCode,
   fetchDiscordUser,
+  fetchDiscordGuildMember,
+  detectFaction,
   type DiscordUser,
 } from "../lib/discord";
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
@@ -80,12 +82,20 @@ router.get("/auth/discord/callback", async (req, res) => {
       code,
       redirectUri: getRedirectUri(req),
     });
-    const user: DiscordUser = await fetchDiscordUser(accessToken);
+    const [user, guildMember] = await Promise.all([
+      fetchDiscordUser(accessToken),
+      fetchDiscordGuildMember(
+        accessToken,
+        process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404",
+      ).catch(() => null),
+    ]);
+    const faction = guildMember ? detectFaction(guildMember.roles) : null;
     const session: SessionUser = {
-      id: user.id,
-      username: user.username,
-      global_name: user.global_name ?? null,
-      avatar: user.avatar ?? null,
+      id: (user as DiscordUser).id,
+      username: (user as DiscordUser).username,
+      global_name: (user as DiscordUser).global_name ?? null,
+      avatar: (user as DiscordUser).avatar ?? null,
+      faction,
     };
     res.cookie(SESSION_COOKIE, JSON.stringify(session), {
       httpOnly: true,
@@ -114,6 +124,7 @@ router.get("/auth/me", async (req, res) => {
       username: user.username,
       displayName: user.global_name || user.username,
       avatarUrl: buildAvatarUrl(user),
+      faction: user.faction ?? null,
     },
     isAdmin: await isAdmin(user.id),
   });

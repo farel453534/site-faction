@@ -7,6 +7,7 @@ export interface SessionUser {
   username: string;
   global_name: string | null;
   avatar: string | null;
+  faction: string | null;
 }
 
 export interface AuthedRequest extends Request {

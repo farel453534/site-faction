@@ -7,6 +7,7 @@ export interface AuthUser {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  faction: string | null;
 }
 
 interface MeResponse {

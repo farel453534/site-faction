@@ -6,9 +6,18 @@ import {
   MapPin,
   Calendar,
   LogIn,
+  ShieldHalf,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import { useAuth, usePlayerStats, type CaptureEntry } from "@/lib/use-auth";
+
+const FACTION_COLORS: Record<string, string> = {
+  Mangemort: "bg-red-950/60 border-red-700/50 text-red-300",
+  Auror: "bg-blue-950/60 border-blue-700/50 text-blue-300",
+  Ministère: "bg-purple-950/60 border-purple-700/50 text-purple-300",
+  "Mage-Indépendant": "bg-emerald-950/60 border-emerald-700/50 text-emerald-300",
+  Professeur: "bg-amber-950/60 border-amber-700/50 text-amber-300",
+};
 
 export default function Profile() {
   const { user, isLoading: authLoading, login } = useAuth();
@@ -77,6 +86,19 @@ export default function Profile() {
           <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
             {user.displayName}
           </h1>
+          {user.faction && (
+            <span
+              className={`inline-flex items-center gap-1.5 mt-2 rounded-full border px-3 py-0.5 text-xs font-semibold ${FACTION_COLORS[user.faction] ?? "bg-white/5 border-white/10 text-foreground/70"}`}
+            >
+              <ShieldHalf className="w-3 h-3" />
+              {user.faction}
+            </span>
+          )}
+          {!user.faction && (
+            <span className="inline-flex items-center gap-1.5 mt-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-0.5 text-xs text-foreground/40">
+              Aucune faction détectée
+            </span>
+          )}
         </div>
       </header>
 
