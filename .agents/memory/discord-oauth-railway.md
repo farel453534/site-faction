@@ -36,3 +36,15 @@ One Railway service serves BOTH the built site and `/api`. The Express server (`
 **Why same-origin is safe:** frontend uses root-relative `/api` (VITE_API_URL unset) so cookies are first-party; `SameSite=lax` survives the top-level OAuth redirect back to `/api/auth/discord/callback`.
 
 `index.ts` fails fast at boot if `SESSION_SECRET` or `DISCORD_CLIENT_SECRET` is missing.
+
+## DB schema deployment: shared database, no migration step
+There is NO migration mechanism — no migrations folder, no boot-time `migrate()`, and the
+Railway build never runs `db push`. Schema is applied ONLY by running
+`pnpm --filter @workspace/db run push` (drizzle-kit) manually from Replit.
+**Implication:** Replit dev and Railway prod point at the SAME Postgres (the `DATABASE_URL`
+secret is the external/Railway DB), so a `db push` from Replit migrates production too.
+**How to apply:** when a new feature adds tables, `db push` from Replit covers the prod DB,
+but the new *code* still must be redeployed to Railway (Railway rebuilds from the repo).
+So a feature can pass every local test yet the LIVE site still errors until Railway is
+redeployed — symptom: an admin write works in the Replit preview but fails on the live URL
+with a generic error, and no matching request appears in the Replit api-server logs.
