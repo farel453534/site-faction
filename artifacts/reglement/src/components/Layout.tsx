@@ -101,7 +101,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
           <div className="hidden lg:block leading-tight">
             <div className="font-serif font-extrabold text-foreground text-[0.95rem] tracking-tight">
-              RÈGLEMENT
+              PANEL
             </div>
             <div className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-primary">
               Faction
