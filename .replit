@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-20", "web", "bash"]
 
 [deployment]
 router = "application"
@@ -24,3 +24,6 @@ timeoutMs = 20000
 [userenv.shared]
 DISCORD_GUILD_ID = "1062740125475426404"
 ADMIN_DISCORD_IDS = "1521612399445147829"
+
+[nix]
+channel = "stable-25_05"
