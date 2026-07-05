@@ -10,14 +10,17 @@ import {
 import { getAppDb } from "./app-db";
 import type { SessionUser } from "./session";
 
-/** Returns true on PostgreSQL error 42703 (column does not exist) — pending migration. */
+function pgErrorCode(err: unknown): string | undefined {
+  const cause = ((err as Record<string, unknown>)["cause"] ?? {}) as Record<string, unknown>;
+  return cause["code"] as string | undefined;
+}
+/** 42P01 — table does not exist. */
+function isMissingTableError(err: unknown): boolean {
+  return pgErrorCode(err) === "42P01";
+}
+/** 42703 — column does not exist (pending migration). */
 function isMissingColumnError(err: unknown): boolean {
-  const anyErr = err as Record<string, unknown>;
-  const cause = (anyErr["cause"] ?? {}) as Record<string, unknown>;
-  return (
-    cause["code"] === "42703" ||
-    String(anyErr["message"] ?? "").includes("does not exist")
-  );
+  return pgErrorCode(err) === "42703";
 }
 
 function db() {
@@ -151,7 +154,9 @@ export async function listMessages(ticketId: number): Promise<TicketMessage[]> {
       .where(eq(ticketMessagesTable.ticketId, ticketId))
       .orderBy(ticketMessagesTable.createdAt);
   } catch (err) {
-    // If attachments column doesn't exist yet (migration pending), retry without it
+    // Table missing → empty list
+    if (isMissingTableError(err)) return [];
+    // attachments column missing (migration pending) → retry without it
     if (!isMissingColumnError(err)) throw err;
     return db()
       .select({

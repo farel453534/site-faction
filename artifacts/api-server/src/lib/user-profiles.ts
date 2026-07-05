@@ -3,17 +3,24 @@ import { userProfilesTable, type UserProfile } from "@workspace/db/schema";
 import { getAppDb } from "./app-db";
 import type { SessionUser } from "./session";
 
-/**
- * Returns true when the error is a PostgreSQL "column does not exist" (code 42703).
- * Used to detect a pending DB migration and fall back gracefully.
- */
-function isMissingColumnError(err: unknown): boolean {
+function pgErrorCode(err: unknown): string | undefined {
   const anyErr = err as Record<string, unknown>;
   const cause = (anyErr["cause"] ?? {}) as Record<string, unknown>;
+  return cause["code"] as string | undefined;
+}
+
+/** PostgreSQL 42P01 — relation/table does not exist. */
+function isMissingTableError(err: unknown): boolean {
   return (
-    cause["code"] === "42703" ||
-    String(anyErr["message"] ?? "").includes("does not exist")
+    pgErrorCode(err) === "42P01" ||
+    String((err as Record<string, unknown>)["message"] ?? "").includes('relation "') && 
+    String((err as Record<string, unknown>)["message"] ?? "").includes("does not exist")
   );
+}
+
+/** PostgreSQL 42703 — column does not exist (pending migration). */
+function isMissingColumnError(err: unknown): boolean {
+  return pgErrorCode(err) === "42703";
 }
 
 /**
@@ -108,17 +115,19 @@ export async function listPanelUsers(): Promise<UserProfile[]> {
       .from(userProfilesTable)
       .orderBy(desc(userProfilesTable.lastSeenAt));
   } catch (err) {
-    // If last_ip column doesn't exist yet (migration pending), retry without it
+    // Table doesn't exist yet (DB never initialised) → return empty list
+    if (isMissingTableError(err)) return [];
+    // last_ip column doesn't exist yet (migration pending) → retry without it
     if (!isMissingColumnError(err)) throw err;
     return db
       .select({
-        discordId:  userProfilesTable.discordId,
-        username:   userProfilesTable.username,
-        globalName: userProfilesTable.globalName,
-        avatar:     userProfilesTable.avatar,
-        faction:    userProfilesTable.faction,
-        steamId:    userProfilesTable.steamId,
-        lastIp:     sql<string | null>`NULL`,
+        discordId:   userProfilesTable.discordId,
+        username:    userProfilesTable.username,
+        globalName:  userProfilesTable.globalName,
+        avatar:      userProfilesTable.avatar,
+        faction:     userProfilesTable.faction,
+        steamId:     userProfilesTable.steamId,
+        lastIp:      sql<string | null>`NULL`,
         firstSeenAt: userProfilesTable.firstSeenAt,
         lastSeenAt:  userProfilesTable.lastSeenAt,
       })
@@ -137,16 +146,21 @@ export async function getSteamIds(
   if (discordIds.length === 0) return new Map();
   const db = getAppDb();
   if (!db) return new Map();
-  const rows = await db
-    .select({
-      discordId: userProfilesTable.discordId,
-      steamId:   userProfilesTable.steamId,
-    })
-    .from(userProfilesTable)
-    .where(inArray(userProfilesTable.discordId, discordIds));
-  const map = new Map<string, string>();
-  for (const r of rows) {
-    if (r.steamId) map.set(r.discordId, r.steamId);
+  try {
+    const rows = await db
+      .select({
+        discordId: userProfilesTable.discordId,
+        steamId:   userProfilesTable.steamId,
+      })
+      .from(userProfilesTable)
+      .where(inArray(userProfilesTable.discordId, discordIds));
+    const map = new Map<string, string>();
+    for (const r of rows) {
+      if (r.steamId) map.set(r.discordId, r.steamId);
+    }
+    return map;
+  } catch {
+    // Table or column missing (DB not yet initialised) — members load without Steam IDs
+    return new Map();
   }
-  return map;
 }
