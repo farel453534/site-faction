@@ -246,7 +246,7 @@ export default function Admin() {
 
       {tab === "admins" && <AdminsManager currentUserId={user.id} />}
 
-      {tab === "panel-users" && <PanelUsersTab data={panelUsers} />}
+      {tab === "panel-users" && <PanelUsersTab data={panelUsers} isResponsable={user.isResponsable ?? false} />}
 
       {selectedPlayer && (
         <PlayerDetail
@@ -504,8 +504,10 @@ function AdminsManager({ currentUserId }: { currentUserId: string }) {
 
 function PanelUsersTab({
   data,
+  isResponsable,
 }: {
   data: ReturnType<typeof usePanelUsers>;
+  isResponsable: boolean;
 }) {
   const [search, setSearch] = useState("");
 
@@ -519,9 +521,10 @@ function PanelUsersTab({
         u.username.toLowerCase().includes(q) ||
         u.discordId.includes(q) ||
         (u.steamId ?? "").includes(q) ||
-        (u.faction ?? "").toLowerCase().includes(q),
+        (u.faction ?? "").toLowerCase().includes(q) ||
+        (isResponsable && (u.lastIp ?? "").includes(q)),
     );
-  }, [data.data, search]);
+  }, [data.data, search, isResponsable]);
 
   return (
     <div className="space-y-5">
@@ -567,7 +570,7 @@ function PanelUsersTab({
           ) : (
             <ul>
               {filtered.map((u) => (
-                <PanelUserRow key={u.discordId} user={u} />
+                <PanelUserRow key={u.discordId} user={u} isResponsable={isResponsable} />
               ))}
             </ul>
           )}
@@ -580,35 +583,54 @@ function PanelUsersTab({
   );
 }
 
-function PanelUserRow({ user }: { user: PanelUser }) {
+function PanelUserRow({ user, isResponsable }: { user: PanelUser; isResponsable: boolean }) {
   const lastSeen = new Date(user.lastSeenAt);
+  const firstSeen = new Date(user.firstSeenAt);
   const dateStr = lastSeen.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+  const firstDateStr = firstSeen.toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",
   });
 
   return (
-    <li className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 items-center border-b border-white/[0.04] last:border-b-0">
-      <div className="min-w-0">
-        <p className="font-medium text-foreground truncate">
-          {user.globalName ?? user.username}
-        </p>
-        <p className="text-xs text-foreground/40 font-mono truncate">
-          {user.discordId}
-        </p>
+    <li className="px-4 py-3 border-b border-white/[0.04] last:border-b-0">
+      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 items-start">
+        <div className="min-w-0">
+          <p className="font-medium text-foreground truncate">
+            {user.globalName ?? user.username}
+          </p>
+          <p className="text-xs text-foreground/40 font-mono truncate">
+            {user.discordId}
+          </p>
+          {/* Infos visibles uniquement par le responsable */}
+          {isResponsable && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+              <span className="text-[0.65rem] text-foreground/35 font-mono">
+                IP : {user.lastIp ?? <span className="italic">inconnue</span>}
+              </span>
+              <span className="text-[0.65rem] text-foreground/30">
+                1ère co. : {firstDateStr}
+              </span>
+            </div>
+          )}
+        </div>
+        <span className="text-xs text-foreground/60 px-2 text-center">
+          {user.faction ?? <span className="text-foreground/30">—</span>}
+        </span>
+        <span className="text-xs font-mono text-foreground/60 px-2 text-center">
+          {user.steamId ? (
+            user.steamId
+          ) : (
+            <span className="text-foreground/25">—</span>
+          )}
+        </span>
+        <span className="text-xs text-foreground/40 text-right shrink-0">{dateStr}</span>
       </div>
-      <span className="text-xs text-foreground/60 px-2 text-center">
-        {user.faction ?? <span className="text-foreground/30">—</span>}
-      </span>
-      <span className="text-xs font-mono text-foreground/60 px-2 text-center">
-        {user.steamId ? (
-          user.steamId
-        ) : (
-          <span className="text-foreground/25">—</span>
-        )}
-      </span>
-      <span className="text-xs text-foreground/40 text-right shrink-0">{dateStr}</span>
     </li>
   );
 }

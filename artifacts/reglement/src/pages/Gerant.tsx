@@ -30,6 +30,7 @@ const FACTION_COLORS: Record<string, { bg: string; border: string; text: string;
   Auror: { bg: "bg-blue-950/30", border: "border-blue-700/40", text: "text-blue-300", accent: "bg-blue-500" },
   Ministère: { bg: "bg-purple-950/30", border: "border-purple-700/40", text: "text-purple-300", accent: "bg-purple-500" },
   "Mage-Indépendant": { bg: "bg-emerald-950/30", border: "border-emerald-700/40", text: "text-emerald-300", accent: "bg-emerald-500" },
+  Professeur: { bg: "bg-amber-950/30", border: "border-amber-700/40", text: "text-amber-300", accent: "bg-amber-500" },
 };
 
 type GerantTab = "members" | "blacklist";

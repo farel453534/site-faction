@@ -25,6 +25,8 @@ router.get("/admin/panel-users", requireAdmin, async (req, res) => {
   if (!isAppDbConfigured()) {
     return res.json({ users: [], dbConfigured: false });
   }
+  const requestingUser = (req as AuthedRequest).user!;
+  const canSeeIp = requestingUser.isResponsable;
   try {
     const users = await listPanelUsers();
     return res.json({
@@ -35,6 +37,8 @@ router.get("/admin/panel-users", requireAdmin, async (req, res) => {
         globalName:  u.globalName,
         faction:     u.faction,
         steamId:     u.steamId,
+        // IP visible uniquement pour le responsable
+        lastIp:      canSeeIp ? (u.lastIp ?? null) : undefined,
         firstSeenAt: u.firstSeenAt.toISOString(),
         lastSeenAt:  u.lastSeenAt.toISOString(),
       })),

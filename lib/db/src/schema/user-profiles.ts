@@ -12,8 +12,10 @@ export const userProfilesTable = pgTable("user_profiles", {
   globalName:  text("global_name"),
   avatar:      text("avatar"),
   faction:     text("faction"),
-  /** Steam ID renseigné par l'utilisateur depuis son profil. */
+  /** Steam ID renseigné par l'utilisateur depuis son profil (toujours en format 64-bit). */
   steamId:     text("steam_id"),
+  /** Adresse IP lors de la dernière connexion Discord (visible uniquement par le responsable). */
+  lastIp:      text("last_ip"),
   firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

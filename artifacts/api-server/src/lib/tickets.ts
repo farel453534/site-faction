@@ -157,10 +157,17 @@ export async function addMessage(input: {
   authorUsername: string;
   isStaff: boolean;
   body: string;
+  attachments?: Array<{ url: string; name: string; type: string; size: number }> | null;
 }): Promise<TicketMessage> {
+  const { attachments, ...rest } = input;
   const rows = await db()
     .insert(ticketMessagesTable)
-    .values(input)
+    .values({
+      ...rest,
+      attachments: attachments && attachments.length > 0
+        ? JSON.stringify(attachments)
+        : null,
+    })
     .returning();
   await db()
     .update(ticketsTable)

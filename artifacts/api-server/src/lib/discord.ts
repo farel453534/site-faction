@@ -37,6 +37,8 @@ export const GERANT_FACTION_ROLES: Array<{ id: string; faction: string }> = [
   { id: "1399144243381010442", faction: "Auror" },
   { id: "1399144244169543791", faction: "Ministère" },
   { id: "1399144394694852670", faction: "Mage-Indépendant" },
+  // TODO: remplace "PROFESSEUR_GERANT_ROLE_ID" par l'ID du rôle Discord Gérant Professeur
+  { id: "PROFESSEUR_GERANT_ROLE_ID", faction: "Professeur" },
 ];
 
 export function detectFaction(roles: string[]): string | null {

@@ -118,7 +118,8 @@ function SteamIdSection({ userId }: { userId: string }) {
         </h2>
       </div>
       <p className="text-sm text-foreground/55 mb-4 leading-relaxed">
-        Renseigne ton Steam ID (17 chiffres) pour que les gérants de ta faction puissent te retrouver en jeu.
+        Renseigne ton Steam ID pour que les gérants de ta faction puissent te retrouver en jeu.
+        Accepte le format 32-bit (ex.&nbsp;<span className="font-mono text-foreground/70">123456789</span>) ou 64-bit (ex.&nbsp;<span className="font-mono text-foreground/70">76561198xxxxxxxxx</span>).
         Tu le trouves sur{" "}
         <a
           href="https://store.steampowered.com/account/"
@@ -149,7 +150,7 @@ function SteamIdSection({ userId }: { userId: string }) {
               inputMode="numeric"
               value={displayValue}
               onChange={(e) => setInput(e.target.value.replace(/\D/g, "").slice(0, 17))}
-              placeholder="76561198000000000"
+              placeholder="123456789 ou 76561198000000000"
               maxLength={17}
               className="flex-1 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/30 font-mono focus:outline-none focus:border-primary/50 transition-colors"
             />

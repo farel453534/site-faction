@@ -1,8 +1,38 @@
 import { Router, type IRouter } from "express";
+import multer from "multer";
+import path from "node:path";
+import { mkdirSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { FACTION_ROLES, notifyNewTicket } from "../lib/discord";
 import { buildTicketUrl } from "../lib/request-url";
 import { isAppDbConfigured } from "../lib/app-db";
 import { requireAuth, type AuthedRequest } from "../lib/session";
+
+// ─── File upload configuration ────────────────────────────────────────────────
+
+export const UPLOADS_DIR =
+  process.env["UPLOADS_DIR"] ?? path.join(process.cwd(), "uploads");
+mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const ALLOWED_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|pdf|txt|mp4|mov|zip|rar|7z|docx?|xlsx?)$/i;
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_EXTENSIONS.test(file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(new Error("file_type_not_allowed"));
+    }
+  },
+});
 import {
   canAccessTicket,
   isStaffFor,
@@ -187,6 +217,7 @@ router.get("/tickets/:id", requireAuth, async (req, res) => {
         authorUsername: m.authorUsername,
         isStaff: m.isStaff,
         body: m.body,
+        attachments: m.attachments ? JSON.parse(m.attachments) : null,
         createdAt: m.createdAt.toISOString(),
       })),
       participants: participants.map((p) => ({
@@ -204,6 +235,7 @@ router.get("/tickets/:id", requireAuth, async (req, res) => {
 });
 
 // POST /tickets/:id/messages — reply on a ticket thread.
+// Body: { body: string, attachments?: Array<{url,name,type,size}> }
 router.post("/tickets/:id/messages", requireAuth, async (req, res) => {
   if (!dbGuard(res)) return;
   const user = (req as AuthedRequest).user!;
@@ -212,9 +244,30 @@ router.post("/tickets/:id/messages", requireAuth, async (req, res) => {
     res.status(400).json({ error: "invalid_id" });
     return;
   }
-  const body = req.body as { body?: unknown };
+  const body = req.body as { body?: unknown; attachments?: unknown };
   const text = typeof body.body === "string" ? body.body.trim().slice(0, 4000) : "";
-  if (!text) {
+  // Validate and sanitise attachment objects from client — never trust raw input
+  const rawAttachments = Array.isArray(body.attachments) ? body.attachments : null;
+  const attachments: Array<{ url: string; name: string; type: string; size: number }> | null =
+    rawAttachments
+      ? rawAttachments
+          .slice(0, 10)
+          .filter(
+            (a): a is { url: string; name: string; type: string; size: number } =>
+              typeof a === "object" &&
+              a !== null &&
+              typeof (a as Record<string, unknown>).url === "string" &&
+              typeof (a as Record<string, unknown>).name === "string" &&
+              typeof (a as Record<string, unknown>).type === "string" &&
+              typeof (a as Record<string, unknown>).size === "number" &&
+              // Only allow URLs from our own upload path
+              /^\/api\/uploads\/[\w\-]+\.\w{1,10}$/.test(
+                (a as Record<string, unknown>).url as string,
+              ),
+          )
+      : null;
+
+  if (!text && (!attachments || attachments.length === 0)) {
     res.status(400).json({ error: "missing_body" });
     return;
   }
@@ -233,7 +286,8 @@ router.post("/tickets/:id/messages", requireAuth, async (req, res) => {
       authorId: user.id,
       authorUsername: user.global_name || user.username,
       isStaff: isStaffFor(user, ticket),
-      body: text,
+      body: text || "📎",
+      attachments,
     });
     res.status(201).json({
       message: {
@@ -242,6 +296,7 @@ router.post("/tickets/:id/messages", requireAuth, async (req, res) => {
         authorUsername: message.authorUsername,
         isStaff: message.isStaff,
         body: message.body,
+        attachments: message.attachments ? JSON.parse(message.attachments) : null,
         createdAt: message.createdAt.toISOString(),
       },
     });
@@ -249,6 +304,75 @@ router.post("/tickets/:id/messages", requireAuth, async (req, res) => {
     req.log.error({ err }, "Failed to post ticket message");
     res.status(500).json({ error: "internal_error" });
   }
+});
+
+// POST /tickets/:id/attachments — upload a file (max 10MB), returns its URL.
+// Auth is checked before multer; on rejection the file is cleaned up from disk.
+router.post(
+  "/tickets/:id/attachments",
+  requireAuth,
+  upload.single("file"),
+  async (req, res) => {
+    if (!dbGuard(res)) return;
+    const user = (req as AuthedRequest).user!;
+    const id = Number(req.params["id"]);
+    if (!Number.isInteger(id)) {
+      // Remove uploaded file from disk before returning error
+      if (req.file) { try { (await import("node:fs/promises")).unlink(req.file.path).catch(() => {}); } catch {} }
+      res.status(400).json({ error: "invalid_id" });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: "no_file" });
+      return;
+    }
+    const cleanup = () => {
+      import("node:fs/promises").then((fs) => fs.unlink(req.file!.path).catch(() => {}));
+    };
+    try {
+      const ticket = await getTicketById(id);
+      if (!ticket) {
+        cleanup();
+        res.status(404).json({ error: "not_found" });
+        return;
+      }
+      if (!(await canAccessTicket(user, ticket))) {
+        cleanup();
+        res.status(403).json({ error: "forbidden" });
+        return;
+      }
+      // URL goes through the authenticated /api/uploads/:filename route
+      res.status(201).json({
+        attachment: {
+          url: `/api/uploads/${req.file.filename}`,
+          name: req.file.originalname,
+          type: req.file.mimetype,
+          size: req.file.size,
+        },
+      });
+    } catch (err) {
+      cleanup();
+      req.log.error({ err }, "Failed to upload ticket attachment");
+      res.status(500).json({ error: "internal_error" });
+    }
+  },
+);
+
+// GET /uploads/:filename — authenticated file download (no public static serving).
+// Only logged-in users can access uploaded attachments.
+router.get("/uploads/:filename", requireAuth, (req, res) => {
+  const raw = String(req.params["filename"] ?? "");
+  // Prevent path traversal
+  const safe = path.basename(raw);
+  if (!safe || safe !== raw || !safe.match(/^[\w\-]+\.\w{1,10}$/)) {
+    res.status(400).json({ error: "invalid_filename" });
+    return;
+  }
+  res.sendFile(path.join(UPLOADS_DIR, safe), (err) => {
+    if (err && !res.headersSent) {
+      res.status(404).json({ error: "not_found" });
+    }
+  });
 });
 
 function requireStaffOnTicket(

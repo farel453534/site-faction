@@ -13,6 +13,9 @@ import {
   RotateCcw,
   ShieldHalf,
   MessageSquare,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import {
@@ -23,6 +26,7 @@ import {
   useTicketDetail,
   useCreateTicket,
   useAddTicketMessage,
+  useUploadTicketAttachment,
   useClaimTicket,
   useUnclaimTicket,
   useCloseTicket,
@@ -30,6 +34,7 @@ import {
   useAddTicketParticipant,
   useRemoveTicketParticipant,
   type TicketEntry,
+  type TicketAttachment,
 } from "@/lib/use-auth";
 
 const STATUS_LABELS: Record<TicketEntry["status"], string> = {
@@ -372,6 +377,7 @@ function TicketDetailModal({
 }) {
   const detail = useTicketDetail(ticketId);
   const addMessage = useAddTicketMessage(ticketId);
+  const uploadAttachment = useUploadTicketAttachment(ticketId);
   const claim = useClaimTicket(ticketId);
   const unclaim = useUnclaimTicket(ticketId);
   const close = useCloseTicket(ticketId);
@@ -380,6 +386,8 @@ function TicketDetailModal({
   const removeParticipant = useRemoveTicketParticipant(ticketId);
 
   const [reply, setReply] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<TicketAttachment[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [participantId, setParticipantId] = useState("");
   const [participantLabel, setParticipantLabel] = useState("");
@@ -389,12 +397,33 @@ function TicketDetailModal({
   const isStaff = detail.data?.isStaff ?? false;
   const canManage = isStaff && ticket?.status !== "closed";
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    uploadAttachment.mutate(file, {
+      onSuccess: (attachment) => {
+        setPendingAttachments((prev) => [...prev, attachment]);
+      },
+      onError: (err) => setUploadError((err as Error).message),
+    });
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
   const handleSendReply = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reply.trim()) return;
-    addMessage.mutate(reply.trim(), {
-      onSuccess: () => setReply(""),
-    });
+    if (!reply.trim() && pendingAttachments.length === 0) return;
+    addMessage.mutate(
+      { body: reply.trim(), attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined },
+      {
+        onSuccess: () => {
+          setReply("");
+          setPendingAttachments([]);
+          setUploadError(null);
+        },
+      },
+    );
   };
 
   const handleAddParticipant = (e: React.FormEvent) => {
@@ -535,35 +564,87 @@ function TicketDetailModal({
                       {new Date(m.createdAt).toLocaleString("fr-FR")}
                     </span>
                   </div>
-                  <p className="text-sm text-foreground/85 whitespace-pre-wrap">
-                    {m.body}
-                  </p>
+                  {m.body && m.body !== "📎" && (
+                    <p className="text-sm text-foreground/85 whitespace-pre-wrap">
+                      {m.body}
+                    </p>
+                  )}
+                  {m.attachments && m.attachments.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {m.attachments.map((att, i) => (
+                        <AttachmentPreview key={i} attachment={att} apiBase={import.meta.env["VITE_API_URL"] ?? ""} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
 
             {ticket.status !== "closed" && (
-              <form onSubmit={handleSendReply} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder="Écrire une réponse…"
-                  className="flex-1 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={addMessage.isPending || !reply.trim()}
-                  className="w-10 h-10 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground flex items-center justify-center transition-colors disabled:opacity-50 shrink-0"
-                  aria-label="Envoyer"
-                >
-                  {addMessage.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </button>
-              </form>
+              <div className="space-y-2">
+                {/* Pending attachments */}
+                {pendingAttachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {pendingAttachments.map((att, i) => (
+                      <div key={i} className="flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1.5 text-xs">
+                        <Paperclip className="w-3 h-3 text-primary/70" />
+                        <span className="text-foreground/70 max-w-[120px] truncate">{att.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPendingAttachments((prev) => prev.filter((_, j) => j !== i))}
+                          className="text-foreground/40 hover:text-destructive transition-colors"
+                          aria-label="Retirer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {uploadError && (
+                  <p className="text-xs text-destructive">{uploadError}</p>
+                )}
+                <form onSubmit={handleSendReply} className="flex items-center gap-2">
+                  {/* File attachment input */}
+                  <label className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer shrink-0 transition-colors ${
+                    uploadAttachment.isPending
+                      ? "opacity-50 cursor-not-allowed"
+                      : "text-foreground/40 hover:text-primary hover:bg-primary/10"
+                  }`} aria-label="Joindre un fichier">
+                    {uploadAttachment.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Paperclip className="w-4 h-4" />
+                    )}
+                    <input
+                      type="file"
+                      className="sr-only"
+                      disabled={uploadAttachment.isPending}
+                      onChange={handleFileSelect}
+                      accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.mp4,.mov,.zip,.rar,.7z,.doc,.docx,.xls,.xlsx"
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Écrire une réponse…"
+                    className="flex-1 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={addMessage.isPending || (!reply.trim() && pendingAttachments.length === 0)}
+                    className="w-10 h-10 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground flex items-center justify-center transition-colors disabled:opacity-50 shrink-0"
+                    aria-label="Envoyer"
+                  >
+                    {addMessage.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                </form>
+              </div>
             )}
 
             {isStaff && (
@@ -658,6 +739,62 @@ function TicketDetailModal({
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Attachment preview ───────────────────────────────────────────────────────
+
+function AttachmentPreview({
+  attachment,
+  apiBase,
+}: {
+  attachment: TicketAttachment;
+  apiBase: string;
+}) {
+  const isImage = /^image\//.test(attachment.type);
+  const url = `${apiBase}${attachment.url}`;
+
+  if (isImage) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-lg overflow-hidden border border-white/10 hover:border-primary/40 transition-colors max-w-[200px]"
+      >
+        <img
+          src={url}
+          alt={attachment.name}
+          className="max-h-40 w-full object-cover"
+        />
+        <p className="text-[0.65rem] text-foreground/50 px-2 py-1 truncate">
+          {attachment.name}
+        </p>
+      </a>
+    );
+  }
+
+  const isPdf = attachment.type === "application/pdf";
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] hover:border-primary/40 transition-colors px-3 py-2"
+    >
+      {isPdf ? (
+        <FileText className="w-4 h-4 text-primary/70 shrink-0" />
+      ) : (
+        <Paperclip className="w-4 h-4 text-foreground/50 shrink-0" />
+      )}
+      <div className="min-w-0">
+        <p className="text-xs text-foreground/80 truncate max-w-[180px]">{attachment.name}</p>
+        <p className="text-[0.6rem] text-foreground/40">
+          {(attachment.size / 1024).toFixed(0)} Ko
+        </p>
+      </div>
+    </a>
   );
 }
 

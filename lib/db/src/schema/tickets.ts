@@ -41,6 +41,8 @@ export const ticketMessagesTable = pgTable("ticket_messages", {
   authorUsername: text("author_username").notNull(),
   isStaff: boolean("is_staff").notNull().default(false),
   body: text("body").notNull(),
+  /** JSON array of { url, name, type, size } objects — nullable when no attachments. */
+  attachments: text("attachments"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

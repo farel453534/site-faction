@@ -35,7 +35,27 @@ router.get("/me/profile", requireAuth, async (req, res) => {
   }
 });
 
-/** PATCH /api/me/profile — update steamId. */
+/**
+ * Normalise un Steam ID vers le format 64-bit (17 chiffres).
+ * Accepte SteamID64 (17 chiffres) ou SteamID32 (≤10 chiffres).
+ * Retourne null si la valeur est invalide.
+ */
+function normalizeSteamId(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // SteamID64 : exactement 17 chiffres
+  if (/^\d{17}$/.test(trimmed)) return trimmed;
+  // SteamID32 : 1 à 10 chiffres, max valeur 4294967295 (2^32 − 1) → conversion en SteamID64
+  if (/^\d{1,10}$/.test(trimmed)) {
+    const id32 = BigInt(trimmed);
+    if (id32 > 4294967295n) return null; // hors plage valide
+    const STEAM_ID64_BASE = 76561197960265728n;
+    return (STEAM_ID64_BASE + id32).toString();
+  }
+  return null; // invalide
+}
+
+/** PATCH /api/me/profile — update steamId (accepte SteamID32 ou SteamID64). */
 router.patch("/me/profile", requireAuth, async (req, res) => {
   const user = (req as AuthedRequest).user!;
   if (!isAppDbConfigured()) {
@@ -43,18 +63,23 @@ router.patch("/me/profile", requireAuth, async (req, res) => {
   }
   const body = req.body as { steamId?: unknown };
   const rawSteamId = typeof body.steamId === "string" ? body.steamId.trim() : null;
-  // Validate: Steam ID is a 64-bit number (17 digits starting with 7656119)
-  if (rawSteamId && !/^\d{17}$/.test(rawSteamId)) {
-    return res.status(400).json({ error: "invalid_steam_id" });
+
+  let steamId64: string | null = null;
+  if (rawSteamId) {
+    steamId64 = normalizeSteamId(rawSteamId);
+    if (!steamId64) {
+      return res.status(400).json({ error: "invalid_steam_id" });
+    }
   }
+
   try {
-    await updateSteamId(user.id, rawSteamId || null, {
+    await updateSteamId(user.id, steamId64 || null, {
       username:    user.username,
       global_name: user.global_name,
       avatar:      user.avatar,
       faction:     user.faction,
     });
-    return res.json({ ok: true, steamId: rawSteamId || null });
+    return res.json({ ok: true, steamId: steamId64 || null });
   } catch (err) {
     if (err instanceof Error && err.message === "DB_UNAVAILABLE") {
       return res.status(503).json({ error: "db_unavailable" });

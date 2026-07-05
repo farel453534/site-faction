@@ -117,8 +117,12 @@ router.get("/auth/discord/callback", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
     });
-    // Fire-and-forget: record this user in the panel registry
-    void upsertUserProfile(session);
+    // Fire-and-forget: record this user in the panel registry (IP included)
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ??
+      req.socket?.remoteAddress ??
+      null;
+    void upsertUserProfile(session, clientIp);
     return res.redirect(frontend);
   } catch (err) {
     req.log.error({ err }, "Discord OAuth callback failed");

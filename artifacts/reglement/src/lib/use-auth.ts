@@ -235,12 +235,20 @@ export interface TicketEntry {
   closedAt: string | null;
 }
 
+export interface TicketAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export interface TicketMessageEntry {
   id: number;
   authorId: string;
   authorUsername: string;
   isStaff: boolean;
   body: string;
+  attachments: TicketAttachment[] | null;
   createdAt: string;
 }
 
@@ -391,16 +399,38 @@ export function useCreateTicket() {
 export function useAddTicketMessage(ticketId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: string) => {
+    mutationFn: async (input: { body: string; attachments?: TicketAttachment[] }) => {
       const res = await fetch(`${API_BASE}/api/tickets/${ticketId}/messages`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ body: input.body, attachments: input.attachments }),
       });
       await assertTicketResponseOk(res, queryClient);
     },
     onSuccess: () => invalidateTicket(queryClient, ticketId),
+  });
+}
+
+export function useUploadTicketAttachment(ticketId: number) {
+  return useMutation({
+    mutationFn: async (file: File): Promise<TicketAttachment> => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${API_BASE}/api/tickets/${ticketId}/attachments`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (data.error === "file_type_not_allowed") throw new Error("Type de fichier non autorisé.");
+        if (data.error === "no_file") throw new Error("Aucun fichier sélectionné.");
+        throw new Error("Erreur lors de l'envoi du fichier.");
+      }
+      const json = (await res.json()) as { attachment: TicketAttachment };
+      return json.attachment;
+    },
   });
 }
 
@@ -568,6 +598,8 @@ export interface PanelUser {
   globalName: string | null;
   faction: string | null;
   steamId: string | null;
+  /** Visible uniquement pour le responsable (undefined pour les autres admins). */
+  lastIp?: string | null;
   firstSeenAt: string;
   lastSeenAt: string;
 }
@@ -629,7 +661,7 @@ export function useUpdateSteamId() {
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         const msgs: Record<string, string> = {
-          invalid_steam_id: "Le Steam ID doit contenir exactement 17 chiffres.",
+          invalid_steam_id: "Steam ID invalide — entre ton ID 32-bit (ex. 123456789) ou 64-bit (17 chiffres).",
           db_unavailable: "La base de données n'est pas configurée.",
         };
         throw new Error(msgs[data.error ?? ""] ?? "Une erreur est survenue.");

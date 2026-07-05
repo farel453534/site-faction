@@ -6,8 +6,9 @@ import type { SessionUser } from "./session";
 /**
  * Upsert a user profile row on every successful Discord login.
  * Silently swallows errors so a DB issue never breaks auth.
+ * @param lastIp - IP address of the user at login time (stored for responsable visibility only).
  */
-export async function upsertUserProfile(user: SessionUser): Promise<void> {
+export async function upsertUserProfile(user: SessionUser, lastIp?: string | null): Promise<void> {
   const db = getAppDb();
   if (!db) return;
   try {
@@ -19,6 +20,7 @@ export async function upsertUserProfile(user: SessionUser): Promise<void> {
         globalName: user.global_name ?? null,
         avatar:     user.avatar ?? null,
         faction:    user.faction ?? null,
+        lastIp:     lastIp ?? null,
         lastSeenAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -28,6 +30,7 @@ export async function upsertUserProfile(user: SessionUser): Promise<void> {
           globalName: user.global_name ?? null,
           avatar:     user.avatar ?? null,
           faction:    user.faction ?? null,
+          lastIp:     lastIp ?? null,
           lastSeenAt: new Date(),
         },
       });
