@@ -74,7 +74,7 @@ function ProfileBadges({ user }: { user: { faction: string | null; grade: string
   );
 }
 
-type SteamFormat = "32" | "64";
+type SteamFormat = "text" | "32" | "64";
 
 const STEAM_FORMAT_CONFIG: Record<SteamFormat, {
   label: string;
@@ -82,23 +82,31 @@ const STEAM_FORMAT_CONFIG: Record<SteamFormat, {
   hint: string;
   placeholder: string;
   maxLen: number;
-  pattern: RegExp;
+  numeric: boolean;
 }> = {
+  "text": {
+    label: "Steam",
+    badge: "Recommandé",
+    hint: "Le format texte affiché dans tes paramètres Steam (ex.\u00a0: STEAM_1:1:36048523).",
+    placeholder: "ex. STEAM_1:1:36048523",
+    maxLen: 30,
+    numeric: false,
+  },
   "32": {
     label: "SteamID32",
-    badge: "Recommandé",
-    hint: "Le format court visible dans les paramètres Steam (ex.\u00a0: 123456789). Il sera automatiquement converti en 64-bit.",
-    placeholder: "ex. 123456789",
+    badge: "",
+    hint: "Le format numérique court (ex.\u00a0: 72097047). Il sera automatiquement converti.",
+    placeholder: "ex. 72097047",
     maxLen: 10,
-    pattern: /^\d{0,10}$/,
+    numeric: true,
   },
   "64": {
     label: "SteamID64",
-    hint: "Le format long à 17 chiffres (ex.\u00a0: 76561198000000000).",
     badge: "",
+    hint: "Le format long à 17 chiffres (ex.\u00a0: 76561198000000000).",
     placeholder: "ex. 76561198000000000",
     maxLen: 17,
-    pattern: /^\d{0,17}$/,
+    numeric: true,
   },
 };
 
@@ -107,7 +115,7 @@ function SteamIdSection({ userId: _userId }: { userId: string }) {
   const updateSteamId = useUpdateSteamId();
 
   const savedSteamId = profile.data?.steamId ?? null;
-  const [format, setFormat] = useState<SteamFormat>("32");
+  const [format, setFormat] = useState<SteamFormat>("text");
   const [input, setInput] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -121,8 +129,12 @@ function SteamIdSection({ userId: _userId }: { userId: string }) {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "");
-    if (cfg.pattern.test(raw)) setInput(raw);
+    if (cfg.numeric) {
+      // Strip non-digits for numeric formats
+      setInput(e.target.value.replace(/\D/g, "").slice(0, cfg.maxLen));
+    } else {
+      setInput(e.target.value.slice(0, cfg.maxLen));
+    }
   };
 
   const handleSave = () => {
@@ -182,7 +194,7 @@ function SteamIdSection({ userId: _userId }: { userId: string }) {
         <div className="space-y-3">
           {/* Format toggle */}
           <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5 gap-0.5">
-            {(["32", "64"] as SteamFormat[]).map((f) => {
+            {(["text", "32", "64"] as SteamFormat[]).map((f) => {
               const active = format === f;
               return (
                 <button
@@ -215,7 +227,7 @@ function SteamIdSection({ userId: _userId }: { userId: string }) {
           <div className="flex gap-2">
             <input
               type="text"
-              inputMode="numeric"
+              inputMode={cfg.numeric ? "numeric" : "text"}
               value={displayValue}
               onChange={handleChange}
               placeholder={cfg.placeholder}
