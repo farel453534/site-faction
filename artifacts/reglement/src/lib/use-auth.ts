@@ -9,8 +9,8 @@ export interface AuthUser {
   avatarUrl: string | null;
   faction: string | null;
   isResponsable: boolean;
-  /** Faction this user manages as gérant, or null if not a gérant. */
-  gerantFaction: string | null;
+  /** All factions this user manages as gérant (a user can hold several gérant roles). */
+  gerantFactions: string[];
 }
 
 interface MeResponse {
@@ -193,12 +193,13 @@ interface GerantMembersResponse {
   members: GerantMember[];
 }
 
-export function useGerantMembers(enabled: boolean) {
+export function useGerantMembers(enabled: boolean, faction: string | null) {
   return useQuery<GerantMembersResponse>({
-    queryKey: ["gerant", "members"],
-    enabled,
+    queryKey: ["gerant", "members", faction],
+    enabled: enabled && !!faction,
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/gerant/members`, {
+      const qs = faction ? `?faction=${encodeURIComponent(faction)}` : "";
+      const res = await fetch(`${API_BASE}/api/gerant/members${qs}`, {
         credentials: "include",
       });
       if (!res.ok) {
@@ -212,6 +213,234 @@ export function useGerantMembers(enabled: boolean) {
     },
     staleTime: 60_000,
     retry: false,
+  });
+}
+
+export interface TicketEntry {
+  id: number;
+  faction: string;
+  category: string;
+  subject: string;
+  authorId: string;
+  authorUsername: string;
+  status: "open" | "claimed" | "closed";
+  claimedBy: string | null;
+  claimedByUsername: string | null;
+  createdAt: string;
+  updatedAt: string;
+  closedAt: string | null;
+}
+
+export interface TicketMessageEntry {
+  id: number;
+  authorId: string;
+  authorUsername: string;
+  isStaff: boolean;
+  body: string;
+  createdAt: string;
+}
+
+export interface TicketParticipantEntry {
+  id: number;
+  discordId: string;
+  label: string | null;
+  addedBy: string;
+  createdAt: string;
+}
+
+interface TicketDetailResponse {
+  ticket: TicketEntry;
+  isStaff: boolean;
+  messages: TicketMessageEntry[];
+  participants: TicketParticipantEntry[];
+}
+
+const TICKET_ERRORS: Record<string, string> = {
+  no_faction: "Tu dois appartenir à une faction pour ouvrir un ticket.",
+  invalid_category: "Catégorie invalide.",
+  missing_fields: "Merci de remplir le sujet et le message.",
+  db_unavailable: "La base de données n'est pas configurée sur ce serveur.",
+  not_gerant_of_faction: "Tu ne gères pas cette faction.",
+  forbidden: "Action non autorisée.",
+  ticket_closed: "Ce ticket est fermé.",
+  invalid_id: "L'identifiant Discord n'est pas valide (chiffres uniquement).",
+  missing_body: "Le message ne peut pas être vide.",
+};
+
+function ticketErrorMessage(code: string | undefined): string {
+  return (code && TICKET_ERRORS[code]) || "Une erreur est survenue.";
+}
+
+export function useMyTickets(enabled: boolean) {
+  return useQuery<TicketEntry[]>({
+    queryKey: ["tickets", "mine"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/tickets`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger tes tickets");
+      const data = (await res.json()) as { tickets: TicketEntry[] };
+      return data.tickets;
+    },
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
+export function useFactionTickets(faction: string | null) {
+  return useQuery<TicketEntry[]>({
+    queryKey: ["tickets", "faction", faction],
+    enabled: !!faction,
+    queryFn: async () => {
+      const res = await fetch(
+        `${API_BASE}/api/tickets?faction=${encodeURIComponent(faction ?? "")}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error("Impossible de charger les tickets");
+      const data = (await res.json()) as { tickets: TicketEntry[] };
+      return data.tickets;
+    },
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
+export function useTicketDetail(ticketId: number | null) {
+  return useQuery<TicketDetailResponse>({
+    queryKey: ["tickets", "detail", ticketId],
+    enabled: ticketId !== null,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/tickets/${ticketId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger le ticket");
+      return (await res.json()) as TicketDetailResponse;
+    },
+    staleTime: 5_000,
+    retry: false,
+  });
+}
+
+function invalidateTicket(
+  queryClient: ReturnType<typeof useQueryClient>,
+  ticketId: number,
+) {
+  queryClient.invalidateQueries({ queryKey: ["tickets"] });
+  queryClient.invalidateQueries({ queryKey: ["tickets", "detail", ticketId] });
+}
+
+export function useCreateTicket() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      category: string;
+      subject: string;
+      body: string;
+    }) => {
+      const res = await fetch(`${API_BASE}/api/tickets`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(ticketErrorMessage(data.error));
+      }
+      return (await res.json()) as { ticket: TicketEntry };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+}
+
+export function useAddTicketMessage(ticketId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: string) => {
+      const res = await fetch(`${API_BASE}/api/tickets/${ticketId}/messages`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(ticketErrorMessage(data.error));
+      }
+    },
+    onSuccess: () => invalidateTicket(queryClient, ticketId),
+  });
+}
+
+function useTicketAction(ticketId: number, action: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(
+        `${API_BASE}/api/tickets/${ticketId}/${action}`,
+        { method: "POST", credentials: "include" },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(ticketErrorMessage(data.error));
+      }
+    },
+    onSuccess: () => invalidateTicket(queryClient, ticketId),
+  });
+}
+
+export function useClaimTicket(ticketId: number) {
+  return useTicketAction(ticketId, "claim");
+}
+export function useUnclaimTicket(ticketId: number) {
+  return useTicketAction(ticketId, "unclaim");
+}
+export function useCloseTicket(ticketId: number) {
+  return useTicketAction(ticketId, "close");
+}
+export function useReopenTicket(ticketId: number) {
+  return useTicketAction(ticketId, "reopen");
+}
+
+export function useAddTicketParticipant(ticketId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { discordId: string; label?: string }) => {
+      const res = await fetch(
+        `${API_BASE}/api/tickets/${ticketId}/participants`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(ticketErrorMessage(data.error));
+      }
+    },
+    onSuccess: () => invalidateTicket(queryClient, ticketId),
+  });
+}
+
+export function useRemoveTicketParticipant(ticketId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (discordId: string) => {
+      const res = await fetch(
+        `${API_BASE}/api/tickets/${ticketId}/participants/${encodeURIComponent(discordId)}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(ticketErrorMessage(data.error));
+      }
+    },
+    onSuccess: () => invalidateTicket(queryClient, ticketId),
   });
 }
 

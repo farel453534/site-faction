@@ -15,7 +15,7 @@ function requireGerant(req: Request, res: Response, next: NextFunction): void {
     res.status(401).json({ error: "unauthenticated" });
     return;
   }
-  if (!user.gerantFaction) {
+  if (!user.gerantFactions || user.gerantFactions.length === 0) {
     res.status(403).json({ error: "not_gerant" });
     return;
   }
@@ -24,13 +24,21 @@ function requireGerant(req: Request, res: Response, next: NextFunction): void {
 }
 
 /**
- * GET /gerant/members
- * Returns Discord members of the gérant's faction + their game stats.
+ * GET /gerant/members?faction=Auror
+ * Returns Discord members of one of the gérant's factions + their game stats.
+ * If the user manages a single faction, `faction` may be omitted.
  * Requires DISCORD_BOT_TOKEN to be set.
  */
 router.get("/gerant/members", requireGerant, async (req, res) => {
   const user = (req as AuthedRequest).user!;
-  const factionName = user.gerantFaction!;
+  const requested =
+    typeof req.query["faction"] === "string" ? req.query["faction"] : null;
+  const factionName = requested ?? user.gerantFactions[0]!;
+
+  if (!user.gerantFactions.includes(factionName)) {
+    res.status(403).json({ error: "not_gerant_of_faction" });
+    return;
+  }
 
   // Find the Discord role ID for this faction
   const factionRole = FACTION_ROLES.find((f) => f.name === factionName);

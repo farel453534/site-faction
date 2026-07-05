@@ -46,12 +46,13 @@ export function detectFaction(roles: string[]): string | null {
   return null;
 }
 
-/** Returns the faction name the user is gérant of, or null. */
-export function detectGerantFaction(roles: string[]): string | null {
+/** Returns ALL factions the user is gérant of (a user can hold several gérant roles). */
+export function detectGerantFactions(roles: string[]): string[] {
+  const factions = new Set<string>();
   for (const { id, faction } of GERANT_FACTION_ROLES) {
-    if (roles.includes(id)) return faction;
+    if (roles.includes(id)) factions.add(faction);
   }
-  return null;
+  return [...factions];
 }
 
 export interface GuildMemberSummary {

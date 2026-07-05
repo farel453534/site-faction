@@ -13,6 +13,7 @@ import {
   User,
   ShieldCheck,
   KeyRound,
+  Ticket,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -378,7 +379,7 @@ function AuthButton() {
             <User className="w-4 h-4" />
             Mon profil
           </Link>
-          {user.gerantFaction && (
+          {user.gerantFactions.length > 0 && (
             <Link
               href="/gerant"
               onClick={() => setOpen(false)}
@@ -388,6 +389,14 @@ function AuthButton() {
               Ma faction
             </Link>
           )}
+          <Link
+            href="/tickets"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-white/5 transition-colors border-t border-white/5"
+          >
+            <Ticket className="w-4 h-4" />
+            Tickets
+          </Link>
           {isAdmin && (
             <Link
               href="/admin"

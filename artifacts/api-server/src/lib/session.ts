@@ -9,8 +9,8 @@ export interface SessionUser {
   avatar: string | null;
   faction: string | null;
   isResponsable: boolean;
-  /** Faction this user manages as gérant, or null if not a gérant. */
-  gerantFaction: string | null;
+  /** All factions this user manages as gérant (a user can hold several gérant roles). */
+  gerantFactions: string[];
 }
 
 export interface AuthedRequest extends Request {

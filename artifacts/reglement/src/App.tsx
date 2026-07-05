@@ -11,6 +11,7 @@ import RulePageView from "@/pages/RulePageView";
 import Profile from "@/pages/Profile";
 import Admin from "@/pages/Admin";
 import Gerant from "@/pages/Gerant";
+import Tickets from "@/pages/Tickets";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/profil" component={Profile} />
       <Route path="/admin" component={Admin} />
       <Route path="/gerant" component={Gerant} />
+      <Route path="/tickets" component={Tickets} />
       <Route path="/:group/:page" component={RulePageView} />
       <Route component={NotFound} />
     </Switch>

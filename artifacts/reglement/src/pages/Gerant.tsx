@@ -40,8 +40,10 @@ const FACTION_COLORS: Record<string, { bg: string; border: string; text: string;
 
 export default function Gerant() {
   const { user, isLoading: authLoading, login } = useAuth();
-  const isGerant = !!user?.gerantFaction;
-  const members = useGerantMembers(isGerant);
+  const isGerant = (user?.gerantFactions.length ?? 0) > 0;
+  const [selectedFaction, setSelectedFaction] = useState<string | null>(null);
+  const activeFaction = selectedFaction ?? user?.gerantFactions[0] ?? null;
+  const members = useGerantMembers(isGerant, activeFaction);
   const [search, setSearch] = useState("");
 
   if (authLoading) {
@@ -92,7 +94,7 @@ export default function Gerant() {
     );
   }
 
-  const factionName = user.gerantFaction!;
+  const factionName = activeFaction!;
   const colors = FACTION_COLORS[factionName] ?? {
     bg: "bg-white/[0.03]",
     border: "border-white/10",
@@ -136,6 +138,25 @@ export default function Gerant() {
           </h1>
         </div>
       </header>
+
+      {user.gerantFactions.length > 1 && (
+        <div className="flex items-center gap-1 mb-6 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit flex-wrap">
+          {user.gerantFactions.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setSelectedFaction(f)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                f === factionName
+                  ? "bg-primary/90 text-primary-foreground"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Bot token missing warning */}
       {isBotMissing && (
