@@ -6,3 +6,9 @@ id = "8W2bFH_3i5tKxRzqYHGH-"
 uri = "file://attached_assets/bot_mis_a_jour.txt"
 type = "text"
 title = "bot.py mis à jour (notifications tickets)"
+
+[[outputs]]
+id = "CB_3ZIa0RpZXcAnQtpRJL"
+uri = "file://attached_assets/bot_py.tar.gz"
+type = "unspecified"
+title = "bot.py mis à jour (notifications tickets)"
