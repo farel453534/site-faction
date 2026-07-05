@@ -74,19 +74,56 @@ function ProfileBadges({ user }: { user: { faction: string | null; grade: string
   );
 }
 
-function SteamIdSection({ userId }: { userId: string }) {
+type SteamFormat = "32" | "64";
+
+const STEAM_FORMAT_CONFIG: Record<SteamFormat, {
+  label: string;
+  badge: string;
+  hint: string;
+  placeholder: string;
+  maxLen: number;
+  pattern: RegExp;
+}> = {
+  "32": {
+    label: "SteamID32",
+    badge: "Recommandé",
+    hint: "Le format court visible dans les paramètres Steam (ex.\u00a0: 123456789). Il sera automatiquement converti en 64-bit.",
+    placeholder: "ex. 123456789",
+    maxLen: 10,
+    pattern: /^\d{0,10}$/,
+  },
+  "64": {
+    label: "SteamID64",
+    hint: "Le format long à 17 chiffres (ex.\u00a0: 76561198000000000).",
+    badge: "",
+    placeholder: "ex. 76561198000000000",
+    maxLen: 17,
+    pattern: /^\d{0,17}$/,
+  },
+};
+
+function SteamIdSection({ userId: _userId }: { userId: string }) {
   const profile = useMyProfile(true);
   const updateSteamId = useUpdateSteamId();
 
-  // Local input mirrors saved value; undefined = not yet loaded
   const savedSteamId = profile.data?.steamId ?? null;
+  const [format, setFormat] = useState<SteamFormat>("32");
   const [input, setInput] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // Initialise input from server once loaded
+  const cfg = STEAM_FORMAT_CONFIG[format];
   const displayValue = input !== null ? input : (savedSteamId ?? "");
-
   const isDirty = input !== null && input !== (savedSteamId ?? "");
+
+  const handleFormatChange = (f: SteamFormat) => {
+    setFormat(f);
+    setInput(null); // reset input on format switch
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    if (cfg.pattern.test(raw)) setInput(raw);
+  };
 
   const handleSave = () => {
     const val = displayValue.trim() || null;
@@ -119,7 +156,6 @@ function SteamIdSection({ userId }: { userId: string }) {
       </div>
       <p className="text-sm text-foreground/55 mb-4 leading-relaxed">
         Renseigne ton Steam ID pour que les gérants de ta faction puissent te retrouver en jeu.
-        Accepte le format 32-bit (ex.&nbsp;<span className="font-mono text-foreground/70">123456789</span>) ou 64-bit (ex.&nbsp;<span className="font-mono text-foreground/70">76561198xxxxxxxxx</span>).
         Tu le trouves sur{" "}
         <a
           href="https://store.steampowered.com/account/"
@@ -144,14 +180,46 @@ function SteamIdSection({ userId }: { userId: string }) {
 
       {!profile.isLoading && profile.data?.dbConfigured !== false && (
         <div className="space-y-3">
+          {/* Format toggle */}
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5 gap-0.5">
+            {(["32", "64"] as SteamFormat[]).map((f) => {
+              const active = format === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => handleFormatChange(f)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-foreground/50 hover:text-foreground"
+                  }`}
+                >
+                  {STEAM_FORMAT_CONFIG[f].label}
+                  {STEAM_FORMAT_CONFIG[f].badge && (
+                    <span className={`rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-wide leading-none ${
+                      active ? "bg-white/20 text-primary-foreground" : "bg-primary/20 text-primary"
+                    }`}>
+                      {STEAM_FORMAT_CONFIG[f].badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Hint for selected format */}
+          <p className="text-xs text-foreground/40 leading-relaxed">{cfg.hint}</p>
+
+          {/* Input + save */}
           <div className="flex gap-2">
             <input
               type="text"
               inputMode="numeric"
               value={displayValue}
-              onChange={(e) => setInput(e.target.value.replace(/\D/g, "").slice(0, 17))}
-              placeholder="123456789 ou 76561198000000000"
-              maxLength={17}
+              onChange={handleChange}
+              placeholder={cfg.placeholder}
+              maxLength={cfg.maxLen}
               className="flex-1 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/30 font-mono focus:outline-none focus:border-primary/50 transition-colors"
             />
             <button
