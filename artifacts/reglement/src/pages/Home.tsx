@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Sparkles,
   Swords,
+  Ticket,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -59,6 +60,13 @@ export default function Home() {
       href: DISCORD_INVITE,
       external: true,
       icon: FaDiscord,
+    },
+    {
+      key: "tickets",
+      title: "Tickets",
+      description: "Dépose une plainte ou une demande auprès de ta faction.",
+      href: "/tickets",
+      icon: Ticket,
     },
   ];
 
