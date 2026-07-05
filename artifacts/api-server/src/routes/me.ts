@@ -36,7 +36,7 @@ router.get("/me/profile", requireAuth, async (req, res) => {
 });
 
 /**
- * Normalise un Steam ID vers le format 64-bit (17 chiffres).
+ * Normalise un Steam ID vers le format texte STEAM_1:Y:Z.
  * Accepte :
  *   - Format texte  : STEAM_X:Y:Z  (ex. STEAM_1:1:36048523)
  *   - SteamID32     : nombre ≤ 10 chiffres  (ex. 72097047)
@@ -49,23 +49,34 @@ function normalizeSteamId(raw: string): string | null {
 
   const STEAM_ID64_BASE = 76561197960265728n;
 
+  function toSteamText(id64: bigint): string {
+    const diff = id64 - STEAM_ID64_BASE;
+    const y = diff % 2n;
+    const z = (diff - y) / 2n;
+    return `STEAM_1:${y}:${z}`;
+  }
+
   // Format texte STEAM_X:Y:Z (case-insensitive, Y ∈ {0,1}, Z ≤ 2^31−1)
   const textMatch = /^STEAM_\d+:([01]):(\d{1,10})$/i.exec(trimmed);
   if (textMatch) {
     const y = BigInt(textMatch[1]!);
     const z = BigInt(textMatch[2]!);
     if (z > 2147483647n) return null;
-    return (STEAM_ID64_BASE + z * 2n + y).toString();
+    return `STEAM_1:${y}:${z}`;
   }
 
   // SteamID64 : exactement 17 chiffres
-  if (/^\d{17}$/.test(trimmed)) return trimmed;
+  if (/^\d{17}$/.test(trimmed)) {
+    const id64 = BigInt(trimmed);
+    if (id64 < STEAM_ID64_BASE) return null;
+    return toSteamText(id64);
+  }
 
   // SteamID32 : 1 à 10 chiffres, max 4294967295 (2^32−1)
   if (/^\d{1,10}$/.test(trimmed)) {
     const id32 = BigInt(trimmed);
     if (id32 > 4294967295n) return null;
-    return (STEAM_ID64_BASE + id32).toString();
+    return toSteamText(STEAM_ID64_BASE + id32);
   }
 
   return null;
