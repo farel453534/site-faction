@@ -10,6 +10,7 @@ import {
   detectGrade,
   detectGerantFactions,
   RESPONSABLE_ID,
+  FACTION_ROLES,
   type DiscordUser,
 } from "../lib/discord";
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
@@ -83,6 +84,12 @@ router.get("/auth/discord/callback", async (req, res) => {
     ]);
     const roles = guildMember?.roles ?? [];
     const faction = detectFaction(roles);
+    const isResponsable = (user as DiscordUser).id === RESPONSABLE_ID;
+    // The Responsable manages every faction, regardless of which gérant roles
+    // they personally hold on Discord — full oversight of all tickets/members.
+    const gerantFactions = isResponsable
+      ? FACTION_ROLES.map((f) => f.name)
+      : detectGerantFactions(roles);
     const session: SessionUser = {
       id: (user as DiscordUser).id,
       username: (user as DiscordUser).username,
@@ -90,8 +97,8 @@ router.get("/auth/discord/callback", async (req, res) => {
       avatar: (user as DiscordUser).avatar ?? null,
       faction,
       grade: detectGrade(faction, roles),
-      isResponsable: (user as DiscordUser).id === RESPONSABLE_ID,
-      gerantFactions: detectGerantFactions(roles),
+      isResponsable,
+      gerantFactions,
     };
     res.cookie(SESSION_COOKIE, JSON.stringify(session), {
       httpOnly: true,
