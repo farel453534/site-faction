@@ -7,6 +7,7 @@ import {
   Users,
   ShieldHalf,
   AlertTriangle,
+  Gamepad2,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import { useAuth, useGerantMembers, type GerantMember } from "@/lib/use-auth";
@@ -261,6 +262,12 @@ function MemberRow({ member }: { member: GerantMember }) {
           {member.grade && (
             <span className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.06] px-2 py-0.5 text-[0.65rem] font-semibold text-foreground/70">
               {member.grade}
+            </span>
+          )}
+          {member.steamId && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[0.65rem] font-mono text-primary/80">
+              <Gamepad2 className="w-3 h-3" />
+              {member.steamId}
             </span>
           )}
         </div>

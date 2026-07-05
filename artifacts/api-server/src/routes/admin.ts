@@ -9,11 +9,41 @@ import {
 } from "../lib/admin";
 import { isAppDbConfigured } from "../lib/app-db";
 import { getLeaderboard, getPlayerStats } from "../lib/game-db";
+import { listPanelUsers } from "../lib/user-profiles";
 import type { AuthedRequest } from "../lib/session";
 
 const router: IRouter = Router();
 
 const ID_RE = /^\d{15,25}$/;
+
+/**
+ * GET /api/admin/panel-users
+ * Liste tous les comptes Discord ayant déjà connecté leur compte sur le panel.
+ * Réservé aux admins (responsable inclus).
+ */
+router.get("/admin/panel-users", requireAdmin, async (req, res) => {
+  if (!isAppDbConfigured()) {
+    return res.json({ users: [], dbConfigured: false });
+  }
+  try {
+    const users = await listPanelUsers();
+    return res.json({
+      dbConfigured: true,
+      users: users.map((u) => ({
+        discordId:   u.discordId,
+        username:    u.username,
+        globalName:  u.globalName,
+        faction:     u.faction,
+        steamId:     u.steamId,
+        firstSeenAt: u.firstSeenAt.toISOString(),
+        lastSeenAt:  u.lastSeenAt.toISOString(),
+      })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list panel users");
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
 
 router.get("/admin/players", requireAdmin, async (req, res) => {
   try {

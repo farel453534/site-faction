@@ -6,6 +6,7 @@ import {
   detectGrade,
 } from "../lib/discord";
 import { getLeaderboard } from "../lib/game-db";
+import { getSteamIds } from "../lib/user-profiles";
 import { readSession, type AuthedRequest } from "../lib/session";
 
 const router: IRouter = Router();
@@ -65,6 +66,10 @@ router.get("/gerant/members", requireGerant, async (req, res) => {
     // Build a lookup map: discordId → leaderboard entry
     const statsMap = new Map(leaderboard.map((e) => [e.userId, e]));
 
+    // Fetch Steam IDs from panel profiles
+    const memberIds = members.map((m) => m.id);
+    const steamMap = await getSteamIds(memberIds);
+
     const result = members.map((m) => {
       const stats = statsMap.get(m.id);
       return {
@@ -76,6 +81,7 @@ router.get("/gerant/members", requireGerant, async (req, res) => {
         points: stats?.points ?? 0,
         rank: stats?.rank ?? null,
         captures: stats?.captures ?? 0,
+        steamId: steamMap.get(m.id) ?? null,
       };
     });
 

@@ -189,6 +189,7 @@ export interface GerantMember {
   points: number;
   rank: number | null;
   captures: number;
+  steamId: string | null;
 }
 
 interface GerantMembersResponse {
@@ -460,6 +461,88 @@ export function useRemoveTicketParticipant(ticketId: number) {
       await assertTicketResponseOk(res, queryClient);
     },
     onSuccess: () => invalidateTicket(queryClient, ticketId),
+  });
+}
+
+// ─── Panel users (admin) ──────────────────────────────────────────────────────
+
+export interface PanelUser {
+  discordId: string;
+  username: string;
+  globalName: string | null;
+  faction: string | null;
+  steamId: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+interface PanelUsersResponse {
+  users: PanelUser[];
+  dbConfigured: boolean;
+}
+
+export function usePanelUsers(enabled: boolean) {
+  return useQuery<PanelUsersResponse>({
+    queryKey: ["admin", "panel-users"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/admin/panel-users`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger les membres connectés");
+      return (await res.json()) as PanelUsersResponse;
+    },
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+// ─── My profile (steamId) ────────────────────────────────────────────────────
+
+interface MyProfileResponse {
+  steamId: string | null;
+  dbConfigured: boolean;
+}
+
+export function useMyProfile(enabled: boolean) {
+  return useQuery<MyProfileResponse>({
+    queryKey: ["me", "profile"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/me/profile`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger le profil");
+      return (await res.json()) as MyProfileResponse;
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useUpdateSteamId() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (steamId: string | null) => {
+      const res = await fetch(`${API_BASE}/api/me/profile`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ steamId }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        const msgs: Record<string, string> = {
+          invalid_steam_id: "Le Steam ID doit contenir exactement 17 chiffres.",
+          db_unavailable: "La base de données n'est pas configurée.",
+        };
+        throw new Error(msgs[data.error ?? ""] ?? "Une erreur est survenue.");
+      }
+      return (await res.json()) as { ok: boolean; steamId: string | null };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["me", "profile"] });
+    },
   });
 }
 

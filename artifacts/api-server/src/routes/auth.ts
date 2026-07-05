@@ -16,6 +16,7 @@ import {
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
 import { isAdmin } from "../lib/admin";
 import { getBaseUrl } from "../lib/request-url";
+import { upsertUserProfile } from "../lib/user-profiles";
 
 const router: IRouter = Router();
 
@@ -108,6 +109,8 @@ router.get("/auth/discord/callback", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
     });
+    // Fire-and-forget: record this user in the panel registry
+    void upsertUserProfile(session);
     return res.redirect(frontend);
   } catch (err) {
     req.log.error({ err }, "Discord OAuth callback failed");

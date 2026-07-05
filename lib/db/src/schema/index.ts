@@ -20,3 +20,4 @@
 export * from "./admins";
 export * from "./content";
 export * from "./tickets";
+export * from "./user-profiles";

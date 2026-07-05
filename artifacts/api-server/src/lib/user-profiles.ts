@@ -1,0 +1,96 @@
+import { eq, desc, inArray } from "drizzle-orm";
+import { userProfilesTable, type UserProfile } from "@workspace/db/schema";
+import { getAppDb } from "./app-db";
+import type { SessionUser } from "./session";
+
+/**
+ * Upsert a user profile row on every successful Discord login.
+ * Silently swallows errors so a DB issue never breaks auth.
+ */
+export async function upsertUserProfile(user: SessionUser): Promise<void> {
+  const db = getAppDb();
+  if (!db) return;
+  try {
+    await db
+      .insert(userProfilesTable)
+      .values({
+        discordId:  user.id,
+        username:   user.username,
+        globalName: user.global_name ?? null,
+        avatar:     user.avatar ?? null,
+        faction:    user.faction ?? null,
+        lastSeenAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userProfilesTable.discordId,
+        set: {
+          username:   user.username,
+          globalName: user.global_name ?? null,
+          avatar:     user.avatar ?? null,
+          faction:    user.faction ?? null,
+          lastSeenAt: new Date(),
+        },
+      });
+  } catch {
+    // non-blocking — DB unavailability never breaks login
+  }
+}
+
+/** Update only the steamId field for a given user. */
+export async function updateSteamId(
+  discordId: string,
+  steamId: string | null,
+): Promise<void> {
+  const db = getAppDb();
+  if (!db) throw new Error("DB_UNAVAILABLE");
+  await db
+    .update(userProfilesTable)
+    .set({ steamId })
+    .where(eq(userProfilesTable.discordId, discordId));
+}
+
+/** Return the profile row for a single user (or null). */
+export async function getUserProfile(discordId: string): Promise<UserProfile | null> {
+  const db = getAppDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.discordId, discordId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Return all panel users, most recently seen first. */
+export async function listPanelUsers(): Promise<UserProfile[]> {
+  const db = getAppDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(userProfilesTable)
+    .orderBy(desc(userProfilesTable.lastSeenAt));
+}
+
+/**
+ * Given a list of Discord IDs, return a map discordId → steamId
+ * (only IDs that have a non-null steamId are included).
+ */
+export async function getSteamIds(
+  discordIds: string[],
+): Promise<Map<string, string>> {
+  if (discordIds.length === 0) return new Map();
+  const db = getAppDb();
+  if (!db) return new Map();
+  const rows = await db
+    .select({
+      discordId: userProfilesTable.discordId,
+      steamId:   userProfilesTable.steamId,
+    })
+    .from(userProfilesTable)
+    .where(inArray(userProfilesTable.discordId, discordIds));
+  const map = new Map<string, string>();
+  for (const r of rows) {
+    if (r.steamId) map.set(r.discordId, r.steamId);
+  }
+  return map;
+}

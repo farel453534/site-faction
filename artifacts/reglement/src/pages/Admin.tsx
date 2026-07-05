@@ -14,6 +14,7 @@ import {
   Trash2,
   Shield,
   Loader2,
+  MonitorSmartphone,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import {
@@ -23,12 +24,14 @@ import {
   useAdminList,
   useAddAdmin,
   useRemoveAdmin,
+  usePanelUsers,
   type LeaderboardEntry,
   type CaptureEntry,
   type AdminEntry,
+  type PanelUser,
 } from "@/lib/use-auth";
 
-type AdminTab = "stats" | "admins";
+type AdminTab = "stats" | "admins" | "panel-users";
 
 function playerName(p: { displayName: string | null; userId: string }): string {
   if (p.displayName) return p.displayName;
@@ -43,6 +46,7 @@ export default function Admin() {
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<AdminTab>("stats");
   const detail = useAdminPlayerStats(selected);
+  const panelUsers = usePanelUsers(!!user && isAdmin && tab === "panel-users");
 
   const filtered = useMemo(() => {
     const list = players.data ?? [];
@@ -134,7 +138,7 @@ export default function Admin() {
         </div>
       </header>
 
-      <div className="flex items-center gap-1 mb-8 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit">
+      <div className="flex items-center gap-1 mb-8 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit flex-wrap">
         <button
           type="button"
           onClick={() => setTab("stats")}
@@ -158,6 +162,18 @@ export default function Admin() {
         >
           <Users className="w-4 h-4" />
           Administrateurs
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("panel-users")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            tab === "panel-users"
+              ? "bg-primary/90 text-primary-foreground"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <MonitorSmartphone className="w-4 h-4" />
+          Membres connectés
         </button>
       </div>
 
@@ -229,6 +245,8 @@ export default function Admin() {
       )}
 
       {tab === "admins" && <AdminsManager currentUserId={user.id} />}
+
+      {tab === "panel-users" && <PanelUsersTab data={panelUsers} />}
 
       {selectedPlayer && (
         <PlayerDetail
@@ -479,6 +497,119 @@ function AdminsManager({ currentUserId }: { currentUserId: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Panel Users tab ──────────────────────────────────────────────────────────
+
+function PanelUsersTab({
+  data,
+}: {
+  data: ReturnType<typeof usePanelUsers>;
+}) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const list = data.data?.users ?? [];
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (u) =>
+        (u.globalName ?? u.username).toLowerCase().includes(q) ||
+        u.username.toLowerCase().includes(q) ||
+        u.discordId.includes(q) ||
+        (u.steamId ?? "").includes(q) ||
+        (u.faction ?? "").toLowerCase().includes(q),
+    );
+  }, [data.data, search]);
+
+  return (
+    <div className="space-y-5">
+      <div className="relative max-w-md">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher par nom, Discord ID, Steam ID ou faction…"
+          className="w-full rounded-full bg-white/[0.04] border border-white/10 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
+        />
+      </div>
+
+      {data.isLoading && (
+        <div className="h-64 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      )}
+
+      {data.isError && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
+          Impossible de charger la liste des membres connectés.
+        </div>
+      )}
+
+      {data.data && !data.data.dbConfigured && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-foreground/80">
+          La base de données n'est pas encore configurée sur ce serveur.
+        </div>
+      )}
+
+      {data.data?.dbConfigured && (
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
+            <span>Membre</span>
+            <span className="text-center">Faction</span>
+            <span className="text-center">Steam ID</span>
+            <span className="text-right">Dernière co.</span>
+          </div>
+          {filtered.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-foreground/50">
+              {search ? "Aucun membre trouvé." : "Aucun membre connecté pour l'instant."}
+            </p>
+          ) : (
+            <ul>
+              {filtered.map((u) => (
+                <PanelUserRow key={u.discordId} user={u} />
+              ))}
+            </ul>
+          )}
+          <div className="px-4 py-2.5 border-t border-white/[0.06] text-[0.68rem] text-foreground/35">
+            {data.data.users.length} compte{data.data.users.length !== 1 ? "s" : ""} enregistré{data.data.users.length !== 1 ? "s" : ""}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PanelUserRow({ user }: { user: PanelUser }) {
+  const lastSeen = new Date(user.lastSeenAt);
+  const dateStr = lastSeen.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+
+  return (
+    <li className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 items-center border-b border-white/[0.04] last:border-b-0">
+      <div className="min-w-0">
+        <p className="font-medium text-foreground truncate">
+          {user.globalName ?? user.username}
+        </p>
+        <p className="text-xs text-foreground/40 font-mono truncate">
+          {user.discordId}
+        </p>
+      </div>
+      <span className="text-xs text-foreground/60 px-2 text-center">
+        {user.faction ?? <span className="text-foreground/30">—</span>}
+      </span>
+      <span className="text-xs font-mono text-foreground/60 px-2 text-center">
+        {user.steamId ? (
+          user.steamId
+        ) : (
+          <span className="text-foreground/25">—</span>
+        )}
+      </span>
+      <span className="text-xs text-foreground/40 text-right shrink-0">{dateStr}</span>
+    </li>
   );
 }
 

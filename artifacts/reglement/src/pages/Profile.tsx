@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -7,9 +8,18 @@ import {
   Calendar,
   LogIn,
   ShieldHalf,
+  Gamepad2,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
-import { useAuth, usePlayerStats, type CaptureEntry } from "@/lib/use-auth";
+import {
+  useAuth,
+  usePlayerStats,
+  useMyProfile,
+  useUpdateSteamId,
+  type CaptureEntry,
+} from "@/lib/use-auth";
 
 const FACTION_COLORS: Record<string, string> = {
   Mangemort: "bg-red-950/60 border-red-700/50 text-red-300",
@@ -61,6 +71,122 @@ function ProfileBadges({ user }: { user: { faction: string | null; grade: string
         </span>
       )}
     </div>
+  );
+}
+
+function SteamIdSection({ userId }: { userId: string }) {
+  const profile = useMyProfile(true);
+  const updateSteamId = useUpdateSteamId();
+
+  // Local input mirrors saved value; undefined = not yet loaded
+  const savedSteamId = profile.data?.steamId ?? null;
+  const [input, setInput] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  // Initialise input from server once loaded
+  const displayValue = input !== null ? input : (savedSteamId ?? "");
+
+  const isDirty = input !== null && input !== (savedSteamId ?? "");
+
+  const handleSave = () => {
+    const val = displayValue.trim() || null;
+    updateSteamId.mutate(val, {
+      onSuccess: () => {
+        setSaved(true);
+        setInput(null);
+        setTimeout(() => setSaved(false), 2000);
+      },
+    });
+  };
+
+  const handleClear = () => {
+    updateSteamId.mutate(null, {
+      onSuccess: () => {
+        setInput("");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      },
+    });
+  };
+
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="flex items-center gap-2 text-primary mb-1">
+        <Gamepad2 className="w-4 h-4" />
+        <h2 className="text-[0.72rem] font-semibold uppercase tracking-[0.2em]">
+          Steam ID
+        </h2>
+      </div>
+      <p className="text-sm text-foreground/55 mb-4 leading-relaxed">
+        Renseigne ton Steam ID (17 chiffres) pour que les gérants de ta faction puissent te retrouver en jeu.
+        Tu le trouves sur{" "}
+        <a
+          href="https://store.steampowered.com/account/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2"
+        >
+          steamcommunity.com
+        </a>
+        .
+      </p>
+
+      {profile.isLoading && (
+        <div className="h-10 rounded-full bg-white/[0.04] border border-white/10 animate-pulse" />
+      )}
+
+      {!profile.isLoading && profile.data?.dbConfigured === false && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground/70">
+          La base de données n'est pas encore configurée sur ce serveur.
+        </div>
+      )}
+
+      {!profile.isLoading && profile.data?.dbConfigured !== false && (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={displayValue}
+              onChange={(e) => setInput(e.target.value.replace(/\D/g, "").slice(0, 17))}
+              placeholder="76561198000000000"
+              maxLength={17}
+              className="flex-1 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/30 font-mono focus:outline-none focus:border-primary/50 transition-colors"
+            />
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!isDirty || updateSteamId.isPending}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground font-semibold px-4 py-2.5 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            >
+              {updateSteamId.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : saved ? (
+                <Check className="w-4 h-4" />
+              ) : null}
+              {saved ? "Enregistré" : "Enregistrer"}
+            </button>
+          </div>
+
+          {updateSteamId.isError && (
+            <p className="text-sm text-destructive">
+              {(updateSteamId.error as Error).message}
+            </p>
+          )}
+
+          {savedSteamId && (
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={updateSteamId.isPending}
+              className="text-xs text-foreground/40 hover:text-destructive transition-colors underline underline-offset-2"
+            >
+              Supprimer mon Steam ID
+            </button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -134,6 +260,11 @@ export default function Profile() {
           <ProfileBadges user={user} />
         </div>
       </header>
+
+      {/* Steam ID section */}
+      <div className="mb-8">
+        <SteamIdSection userId={user.id} />
+      </div>
 
       {stats.isLoading && (
         <div className="grid gap-4 sm:grid-cols-2 mb-8">
