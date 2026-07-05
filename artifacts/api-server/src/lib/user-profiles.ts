@@ -1,7 +1,20 @@
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, desc, inArray, sql } from "drizzle-orm";
 import { userProfilesTable, type UserProfile } from "@workspace/db/schema";
 import { getAppDb } from "./app-db";
 import type { SessionUser } from "./session";
+
+/**
+ * Returns true when the error is a PostgreSQL "column does not exist" (code 42703).
+ * Used to detect a pending DB migration and fall back gracefully.
+ */
+function isMissingColumnError(err: unknown): boolean {
+  const anyErr = err as Record<string, unknown>;
+  const cause = (anyErr["cause"] ?? {}) as Record<string, unknown>;
+  return (
+    cause["code"] === "42703" ||
+    String(anyErr["message"] ?? "").includes("does not exist")
+  );
+}
 
 /**
  * Upsert a user profile row on every successful Discord login.
@@ -89,10 +102,29 @@ export async function getUserProfile(discordId: string): Promise<UserProfile | n
 export async function listPanelUsers(): Promise<UserProfile[]> {
   const db = getAppDb();
   if (!db) return [];
-  return db
-    .select()
-    .from(userProfilesTable)
-    .orderBy(desc(userProfilesTable.lastSeenAt));
+  try {
+    return await db
+      .select()
+      .from(userProfilesTable)
+      .orderBy(desc(userProfilesTable.lastSeenAt));
+  } catch (err) {
+    // If last_ip column doesn't exist yet (migration pending), retry without it
+    if (!isMissingColumnError(err)) throw err;
+    return db
+      .select({
+        discordId:  userProfilesTable.discordId,
+        username:   userProfilesTable.username,
+        globalName: userProfilesTable.globalName,
+        avatar:     userProfilesTable.avatar,
+        faction:    userProfilesTable.faction,
+        steamId:    userProfilesTable.steamId,
+        lastIp:     sql<string | null>`NULL`,
+        firstSeenAt: userProfilesTable.firstSeenAt,
+        lastSeenAt:  userProfilesTable.lastSeenAt,
+      })
+      .from(userProfilesTable)
+      .orderBy(desc(userProfilesTable.lastSeenAt));
+  }
 }
 
 /**

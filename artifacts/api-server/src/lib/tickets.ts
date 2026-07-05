@@ -1,4 +1,4 @@
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 import {
   ticketsTable,
   ticketMessagesTable,
@@ -9,6 +9,16 @@ import {
 } from "@workspace/db/schema";
 import { getAppDb } from "./app-db";
 import type { SessionUser } from "./session";
+
+/** Returns true on PostgreSQL error 42703 (column does not exist) — pending migration. */
+function isMissingColumnError(err: unknown): boolean {
+  const anyErr = err as Record<string, unknown>;
+  const cause = (anyErr["cause"] ?? {}) as Record<string, unknown>;
+  return (
+    cause["code"] === "42703" ||
+    String(anyErr["message"] ?? "").includes("does not exist")
+  );
+}
 
 function db() {
   const d = getAppDb();
@@ -134,11 +144,30 @@ export async function listArchivedTickets(): Promise<Ticket[]> {
 }
 
 export async function listMessages(ticketId: number): Promise<TicketMessage[]> {
-  return db()
-    .select()
-    .from(ticketMessagesTable)
-    .where(eq(ticketMessagesTable.ticketId, ticketId))
-    .orderBy(ticketMessagesTable.createdAt);
+  try {
+    return await db()
+      .select()
+      .from(ticketMessagesTable)
+      .where(eq(ticketMessagesTable.ticketId, ticketId))
+      .orderBy(ticketMessagesTable.createdAt);
+  } catch (err) {
+    // If attachments column doesn't exist yet (migration pending), retry without it
+    if (!isMissingColumnError(err)) throw err;
+    return db()
+      .select({
+        id:             ticketMessagesTable.id,
+        ticketId:       ticketMessagesTable.ticketId,
+        authorId:       ticketMessagesTable.authorId,
+        authorUsername: ticketMessagesTable.authorUsername,
+        isStaff:        ticketMessagesTable.isStaff,
+        body:           ticketMessagesTable.body,
+        attachments:    sql<string | null>`NULL`,
+        createdAt:      ticketMessagesTable.createdAt,
+      })
+      .from(ticketMessagesTable)
+      .where(eq(ticketMessagesTable.ticketId, ticketId))
+      .orderBy(ticketMessagesTable.createdAt);
+  }
 }
 
 export async function listParticipants(
@@ -160,15 +189,27 @@ export async function addMessage(input: {
   attachments?: Array<{ url: string; name: string; type: string; size: number }> | null;
 }): Promise<TicketMessage> {
   const { attachments, ...rest } = input;
-  const rows = await db()
-    .insert(ticketMessagesTable)
-    .values({
-      ...rest,
-      attachments: attachments && attachments.length > 0
-        ? JSON.stringify(attachments)
-        : null,
-    })
-    .returning();
+  const serialized = attachments && attachments.length > 0
+    ? JSON.stringify(attachments)
+    : null;
+
+  let rows: TicketMessage[];
+  try {
+    rows = await db()
+      .insert(ticketMessagesTable)
+      .values({ ...rest, attachments: serialized })
+      .returning();
+  } catch (err) {
+    // If attachments column doesn't exist yet (migration pending), retry without it
+    if (!isMissingColumnError(err)) throw err;
+    rows = await db()
+      .insert(ticketMessagesTable)
+      .values(rest)
+      .returning();
+    // Patch the returned row so callers always see the field
+    rows = rows.map((r) => ({ ...r, attachments: null }));
+  }
+
   await db()
     .update(ticketsTable)
     .set({ updatedAt: new Date() })
