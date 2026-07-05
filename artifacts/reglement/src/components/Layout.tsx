@@ -18,7 +18,7 @@ import {
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 import { useSearch } from "@/lib/search-context";
-import { useAuth } from "@/lib/use-auth";
+import { useAuth, useTicketBadgeCount } from "@/lib/use-auth";
 import { useContent } from "@/lib/use-content";
 
 const DISCORD_INVITE = "https://discord.gg/TaqPhgNeM4";
@@ -310,6 +310,7 @@ function RailButton({
 
 function AuthButton() {
   const { user, isAdmin, isLoading, login, logout } = useAuth();
+  const ticketCount = useTicketBadgeCount();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -349,17 +350,24 @@ function AuthButton() {
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 pl-1.5 pr-3 py-1.5 text-sm text-foreground hover:border-primary/50 transition-colors"
       >
-        {user.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt=""
-            className="w-6 h-6 rounded-full object-cover"
-          />
-        ) : (
-          <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
-            <FaDiscord className="w-3.5 h-3.5 text-primary" />
-          </span>
-        )}
+        <span className="relative shrink-0">
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt=""
+              className="w-6 h-6 rounded-full object-cover"
+            />
+          ) : (
+            <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
+              <FaDiscord className="w-3.5 h-3.5 text-primary" />
+            </span>
+          )}
+          {ticketCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full bg-red-500 border border-background flex items-center justify-center text-[0.5rem] font-bold text-white leading-none px-0.5">
+              {ticketCount > 9 ? "9+" : ticketCount}
+            </span>
+          )}
+        </span>
         <span className="hidden sm:inline max-w-[9rem] truncate">
           {user.displayName}
         </span>
@@ -396,6 +404,11 @@ function AuthButton() {
           >
             <Ticket className="w-4 h-4" />
             Tickets
+            {ticketCount > 0 && (
+              <span className="ml-auto min-w-[20px] h-5 rounded-full bg-red-500 flex items-center justify-center text-[0.6rem] font-bold text-white px-1.5 leading-none">
+                {ticketCount > 9 ? "9+" : ticketCount}
+              </span>
+            )}
           </Link>
           {isAdmin && (
             <Link

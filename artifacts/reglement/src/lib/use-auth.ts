@@ -310,8 +310,16 @@ export function useMyTickets(enabled: boolean) {
       return data.tickets;
     },
     staleTime: 15_000,
+    refetchInterval: 30_000,
     retry: false,
   });
+}
+
+export function useTicketBadgeCount() {
+  const { user } = useAuth();
+  const { data } = useMyTickets(!!user);
+  if (!data) return 0;
+  return data.filter((t) => t.status !== "closed").length;
 }
 
 export function useFactionTickets(faction: string | null) {
