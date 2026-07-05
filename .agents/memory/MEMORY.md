@@ -5,3 +5,4 @@
 - [Game DB stats](game-db-stats.md) — how player stats/leaderboard are read from the game database.
 - [Flyout outside-click](flyout-outside-click.md) — left-rail flyout close-on-outside-click behavior.
 - [Tailwind v4 accordion](tailwind-v4-accordion.md) — accordion keyframes/animation gotcha under Tailwind v4.
+- [Two ticket systems](discord-bot-vs-web-tickets.md) — Discord channel-based tickets (Python bot) vs web app tickets table are separate; know which to edit.
