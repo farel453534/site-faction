@@ -34,7 +34,7 @@ function ProfileBadges({ user }: { user: { faction: string | null; grade: string
           ⭐ Responsable
         </span>
       )}
-      {user.gerantFactions.map((f) => (
+      {!user.isResponsable && user.gerantFactions.map((f) => (
         <span key={f} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${GERANT_COLORS[f] ?? "bg-orange-950/60 border-orange-500/50 text-orange-300"}`}>
           🔑 Gérant {f}
         </span>
