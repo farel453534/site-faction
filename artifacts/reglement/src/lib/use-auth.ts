@@ -271,6 +271,20 @@ function ticketErrorMessage(code: string | undefined): string {
   return (code && TICKET_ERRORS[code]) || "Une erreur est survenue.";
 }
 
+async function assertTicketResponseOk(
+  res: Response,
+  queryClient: ReturnType<typeof useQueryClient>,
+): Promise<void> {
+  if (res.ok) return;
+  if (res.status === 401) {
+    queryClient.setQueryData(["auth", "me"], { authenticated: false });
+    queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    throw new Error("Ta session a expiré, reconnecte-toi puis réessaie.");
+  }
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  throw new Error(ticketErrorMessage(data.error));
+}
+
 export function useMyTickets(enabled: boolean) {
   return useQuery<TicketEntry[]>({
     queryKey: ["tickets", "mine"],
@@ -344,10 +358,7 @@ export function useCreateTicket() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(ticketErrorMessage(data.error));
-      }
+      await assertTicketResponseOk(res, queryClient);
       return (await res.json()) as { ticket: TicketEntry };
     },
     onSuccess: () => {
@@ -366,10 +377,7 @@ export function useAddTicketMessage(ticketId: number) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body }),
       });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(ticketErrorMessage(data.error));
-      }
+      await assertTicketResponseOk(res, queryClient);
     },
     onSuccess: () => invalidateTicket(queryClient, ticketId),
   });
@@ -383,10 +391,7 @@ function useTicketAction(ticketId: number, action: string) {
         `${API_BASE}/api/tickets/${ticketId}/${action}`,
         { method: "POST", credentials: "include" },
       );
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(ticketErrorMessage(data.error));
-      }
+      await assertTicketResponseOk(res, queryClient);
     },
     onSuccess: () => invalidateTicket(queryClient, ticketId),
   });
@@ -418,10 +423,7 @@ export function useAddTicketParticipant(ticketId: number) {
           body: JSON.stringify(input),
         },
       );
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(ticketErrorMessage(data.error));
-      }
+      await assertTicketResponseOk(res, queryClient);
     },
     onSuccess: () => invalidateTicket(queryClient, ticketId),
   });
@@ -435,10 +437,7 @@ export function useRemoveTicketParticipant(ticketId: number) {
         `${API_BASE}/api/tickets/${ticketId}/participants/${encodeURIComponent(discordId)}`,
         { method: "DELETE", credentials: "include" },
       );
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(ticketErrorMessage(data.error));
-      }
+      await assertTicketResponseOk(res, queryClient);
     },
     onSuccess: () => invalidateTicket(queryClient, ticketId),
   });
