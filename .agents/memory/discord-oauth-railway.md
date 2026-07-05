@@ -37,14 +37,22 @@ One Railway service serves BOTH the built site and `/api`. The Express server (`
 
 `index.ts` fails fast at boot if `SESSION_SECRET` or `DISCORD_CLIENT_SECRET` is missing.
 
-## DB schema deployment: shared database, no migration step
-There is NO migration mechanism — no migrations folder, no boot-time `migrate()`, and the
-Railway build never runs `db push`. Schema is applied ONLY by running
-`pnpm --filter @workspace/db run push` (drizzle-kit) manually from Replit.
-**Implication:** Replit dev and Railway prod point at the SAME Postgres (the `DATABASE_URL`
-secret is the external/Railway DB), so a `db push` from Replit migrates production too.
-**How to apply:** when a new feature adds tables, `db push` from Replit covers the prod DB,
-but the new *code* still must be redeployed to Railway (Railway rebuilds from the repo).
-So a feature can pass every local test yet the LIVE site still errors until Railway is
-redeployed — symptom: an admin write works in the Replit preview but fails on the live URL
-with a generic error, and no matching request appears in the Replit api-server logs.
+## DB schema deployment: separate DBs now, no migration step
+  As of 2026-07-05, Replit dev's `DATABASE_URL` is a Replit-managed Postgres (auto-provisioned,
+  cannot be overridden via requestEnvVar — blocked as "directly populated by Replit"). Railway
+  prod's app service has its OWN `DATABASE_URL` variable (external Railway Postgres), set
+  independently in the Railway dashboard. They are NOT the same database (this contradicts an
+  earlier assumption in this file — verify before trusting "shared DB" claims again).
+  **Implication:** `pnpm --filter @workspace/db run push` from Replit only migrates the Replit
+  dev DB. It does NOT touch Railway prod.
+  **How to apply schema to Railway prod:** get the Railway Postgres connection string from the
+  user (Railway dashboard → Postgres → "Connect" tab → "Postgres Connection URL"), then run the
+  push with an inline env override for that single command only — do NOT try to store it via
+  `requestEnvVar`/`setEnvVars` as `DATABASE_URL` (blocked/forbidden), just prefix the shell
+  command: `DATABASE_URL="postgresql://..." pnpm --filter @workspace/db run push`. Verify by
+  diffing `information_schema.tables` before/after, or via drizzle-kit output ("Changes applied"
+  vs "No changes detected").
+  **Symptom this explains:** ticket/feature works in Replit dev but Railway prod logs show
+  _DrizzleQueryError "relation does not exist" or similar — check whether Railway's app service
+  DATABASE_URL still points at the DB the agent thinks it does; the user may have changed it.
+  
