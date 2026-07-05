@@ -95,55 +95,67 @@ export async function createTicket(input: {
 
 /** Tickets visible to the user because they authored, are participant of, or claimed them. */
 export async function listMyTickets(userId: string): Promise<Ticket[]> {
-  const owned = await db()
-    .select()
-    .from(ticketsTable)
-    .where(
-      or(
-        eq(ticketsTable.authorId, userId),
-        eq(ticketsTable.claimedBy, userId),
-      ),
-    )
-    .orderBy(desc(ticketsTable.updatedAt));
+  try {
+    const owned = await db()
+      .select()
+      .from(ticketsTable)
+      .where(
+        or(
+          eq(ticketsTable.authorId, userId),
+          eq(ticketsTable.claimedBy, userId),
+        ),
+      )
+      .orderBy(desc(ticketsTable.updatedAt));
 
-  const participantRows = await db()
-    .select({ ticketId: ticketParticipantsTable.ticketId })
-    .from(ticketParticipantsTable)
-    .where(eq(ticketParticipantsTable.discordId, userId));
+    const participantRows = await db()
+      .select({ ticketId: ticketParticipantsTable.ticketId })
+      .from(ticketParticipantsTable)
+      .where(eq(ticketParticipantsTable.discordId, userId));
 
-  const ownedIds = new Set(owned.map((t) => t.id));
-  const extraIds = participantRows
-    .map((r) => r.ticketId)
-    .filter((id) => !ownedIds.has(id));
+    const ownedIds = new Set(owned.map((t) => t.id));
+    const extraIds = participantRows
+      .map((r) => r.ticketId)
+      .filter((id) => !ownedIds.has(id));
 
-  if (extraIds.length === 0) return owned;
+    if (extraIds.length === 0) return owned;
 
-  const extras: Ticket[] = [];
-  for (const id of extraIds) {
-    const t = await getTicketById(id);
-    if (t) extras.push(t);
+    const extras: Ticket[] = [];
+    for (const id of extraIds) {
+      const t = await getTicketById(id);
+      if (t) extras.push(t);
+    }
+    return [...owned, ...extras].sort(
+      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+    );
+  } catch {
+    return [];
   }
-  return [...owned, ...extras].sort(
-    (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
-  );
 }
 
 /** All tickets belonging to a faction (gérant management view). */
 export async function listFactionTickets(faction: string): Promise<Ticket[]> {
-  return db()
-    .select()
-    .from(ticketsTable)
-    .where(eq(ticketsTable.faction, faction))
-    .orderBy(desc(ticketsTable.updatedAt));
+  try {
+    return await db()
+      .select()
+      .from(ticketsTable)
+      .where(eq(ticketsTable.faction, faction))
+      .orderBy(desc(ticketsTable.updatedAt));
+  } catch {
+    return [];
+  }
 }
 
 /** All closed tickets across every faction (Responsable-only archive view). */
 export async function listArchivedTickets(): Promise<Ticket[]> {
-  return db()
-    .select()
-    .from(ticketsTable)
-    .where(eq(ticketsTable.status, "closed"))
-    .orderBy(desc(ticketsTable.updatedAt));
+  try {
+    return await db()
+      .select()
+      .from(ticketsTable)
+      .where(eq(ticketsTable.status, "closed"))
+      .orderBy(desc(ticketsTable.updatedAt));
+  } catch {
+    return [];
+  }
 }
 
 export async function listMessages(ticketId: number): Promise<TicketMessage[]> {
