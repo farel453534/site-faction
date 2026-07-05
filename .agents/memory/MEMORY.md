@@ -6,3 +6,4 @@
 - [Flyout outside-click](flyout-outside-click.md) — left-rail flyout close-on-outside-click behavior.
 - [Tailwind v4 accordion](tailwind-v4-accordion.md) — accordion keyframes/animation gotcha under Tailwind v4.
 - [Two ticket systems](discord-bot-vs-web-tickets.md) — Discord channel-based tickets (Python bot) vs web app tickets table are separate; know which to edit.
+- [Panel user registry + blacklist](panel-features.md) — user_profiles table (login upsert + steamId), blacklists table (per-faction, gérant-scoped), guild-member gate in auth.

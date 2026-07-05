@@ -76,14 +76,22 @@ router.get("/auth/discord/callback", async (req, res) => {
       code,
       redirectUri: getRedirectUri(req),
     });
+    // fetchDiscordGuildMember returns null for 404/403 (not in guild)
+    // and throws for real Discord API failures (which bubble to the outer catch → ?login=error).
     const [user, guildMember] = await Promise.all([
       fetchDiscordUser(accessToken),
       fetchDiscordGuildMember(
         accessToken,
         process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404",
-      ).catch(() => null),
+      ),
     ]);
-    const roles = guildMember?.roles ?? [];
+    // Block users who are not members of the faction Discord server
+    if (!guildMember) {
+      req.log.warn({ userId: (user as DiscordUser).id }, "Login blocked: not a guild member");
+      return res.redirect(`${frontend}?login=not_member`);
+    }
+
+    const roles = guildMember.roles ?? [];
     const faction = detectFaction(roles);
     const isResponsable = (user as DiscordUser).id === RESPONSABLE_ID;
     // The Responsable manages every faction, regardless of which gérant roles

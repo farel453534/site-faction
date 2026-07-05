@@ -36,17 +36,38 @@ export async function upsertUserProfile(user: SessionUser): Promise<void> {
   }
 }
 
-/** Update only the steamId field for a given user. */
+/** Update the steamId for a user. Upserts the profile row if it doesn't exist yet. */
 export async function updateSteamId(
   discordId: string,
   steamId: string | null,
+  sessionUser?: { username: string; global_name: string | null; avatar: string | null; faction: string | null },
 ): Promise<void> {
   const db = getAppDb();
   if (!db) throw new Error("DB_UNAVAILABLE");
-  await db
-    .update(userProfilesTable)
-    .set({ steamId })
-    .where(eq(userProfilesTable.discordId, discordId));
+  // If we have session data, upsert so the row always exists.
+  if (sessionUser) {
+    await db
+      .insert(userProfilesTable)
+      .values({
+        discordId,
+        username:   sessionUser.username,
+        globalName: sessionUser.global_name ?? null,
+        avatar:     sessionUser.avatar ?? null,
+        faction:    sessionUser.faction ?? null,
+        steamId,
+        lastSeenAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userProfilesTable.discordId,
+        set: { steamId, lastSeenAt: new Date() },
+      });
+  } else {
+    // Fallback: update-only (row must already exist from login upsert).
+    await db
+      .update(userProfilesTable)
+      .set({ steamId })
+      .where(eq(userProfilesTable.discordId, discordId));
+  }
 }
 
 /** Return the profile row for a single user (or null). */

@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import { SearchProvider } from "@/lib/search-context";
 import Layout from "@/components/Layout";
 import NotFound from "@/pages/not-found";
@@ -31,6 +32,38 @@ function Router() {
   );
 }
 
+/** Reads ?login= from the URL on first mount and shows the appropriate toast. */
+function LoginErrorNotifier() {
+  const { toast } = useToast();
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const login = params.get("login");
+    if (!login) return;
+    // Clean URL without reloading
+    const clean = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, "", clean);
+    if (login === "not_member") {
+      toast({
+        title: "Accès refusé",
+        description: "Tu dois être membre du Discord MSSClick pour te connecter au panel.",
+        variant: "destructive",
+      });
+    } else if (login === "error") {
+      toast({
+        title: "Erreur de connexion",
+        description: "Une erreur est survenue lors de la connexion Discord. Réessaie.",
+        variant: "destructive",
+      });
+    } else if (login === "cancelled") {
+      toast({
+        title: "Connexion annulée",
+        description: "La connexion Discord a été annulée.",
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 function App() {
   // Force dark mode
   useEffect(() => {
@@ -42,6 +75,7 @@ function App() {
       <TooltipProvider>
         <SearchProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <LoginErrorNotifier />
             <Layout>
               <Router />
             </Layout>

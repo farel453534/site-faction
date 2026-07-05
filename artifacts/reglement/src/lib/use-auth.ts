@@ -464,6 +464,102 @@ export function useRemoveTicketParticipant(ticketId: number) {
   });
 }
 
+// ─── Blacklist (gérant) ──────────────────────────────────────────────────────
+
+export interface BlacklistEntry {
+  id: number;
+  faction: string;
+  discordId: string;
+  playerName: string;
+  reason: string | null;
+  addedBy: string;
+  addedByUsername: string;
+  createdAt: string;
+}
+
+interface BlacklistResponse {
+  faction: string;
+  entries: BlacklistEntry[];
+  dbConfigured: boolean;
+}
+
+const BL_ERRORS: Record<string, string> = {
+  invalid_discord_id: "L'identifiant Discord doit contenir 15 à 25 chiffres.",
+  missing_player_name: "Le nom du joueur est requis.",
+  db_unavailable: "La base de données n'est pas configurée.",
+  not_gerant_of_faction: "Tu ne gères pas cette faction.",
+  not_found: "Entrée introuvable.",
+};
+function blError(code: string | undefined) {
+  return (code && BL_ERRORS[code]) ?? "Une erreur est survenue.";
+}
+
+export function useBlacklist(enabled: boolean, faction: string | null) {
+  return useQuery<BlacklistResponse>({
+    queryKey: ["gerant", "blacklist", faction],
+    enabled: enabled && !!faction,
+    queryFn: async () => {
+      const qs = faction ? `?faction=${encodeURIComponent(faction)}` : "";
+      const res = await fetch(`${API_BASE}/api/gerant/blacklist${qs}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(blError(data.error));
+      }
+      return (await res.json()) as BlacklistResponse;
+    },
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
+export function useAddBlacklist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      faction: string;
+      discordId: string;
+      playerName: string;
+      reason?: string;
+    }) => {
+      const res = await fetch(`${API_BASE}/api/gerant/blacklist`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(blError(data.error));
+      }
+    },
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["gerant", "blacklist", vars.faction] });
+    },
+  });
+}
+
+export function useRemoveBlacklist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, faction }: { id: number; faction: string }) => {
+      const res = await fetch(
+        `${API_BASE}/api/gerant/blacklist/${id}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(blError(data.error));
+      }
+      return faction;
+    },
+    onSuccess: (faction) => {
+      queryClient.invalidateQueries({ queryKey: ["gerant", "blacklist", faction] });
+    },
+  });
+}
+
 // ─── Panel users (admin) ──────────────────────────────────────────────────────
 
 export interface PanelUser {

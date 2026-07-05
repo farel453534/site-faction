@@ -18,6 +18,7 @@
 //   export type Post = typeof postsTable.$inferSelect;
 
 export * from "./admins";
+export * from "./blacklists";
 export * from "./content";
 export * from "./tickets";
 export * from "./user-profiles";

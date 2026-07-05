@@ -5,6 +5,7 @@ import meRouter from "./me";
 import adminRouter from "./admin";
 import contentRouter from "./content";
 import gerantRouter from "./gerant";
+import blacklistRouter from "./blacklist";
 import ticketsRouter from "./tickets";
 
 const router: IRouter = Router();
@@ -15,6 +16,7 @@ router.use(meRouter);
 router.use(adminRouter);
 router.use(contentRouter);
 router.use(gerantRouter);
+router.use(blacklistRouter);
 router.use(ticketsRouter);
 
 export default router;

@@ -48,7 +48,12 @@ router.patch("/me/profile", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "invalid_steam_id" });
   }
   try {
-    await updateSteamId(user.id, rawSteamId || null);
+    await updateSteamId(user.id, rawSteamId || null, {
+      username:    user.username,
+      global_name: user.global_name,
+      avatar:      user.avatar,
+      faction:     user.faction,
+    });
     return res.json({ ok: true, steamId: rawSteamId || null });
   } catch (err) {
     if (err instanceof Error && err.message === "DB_UNAVAILABLE") {
