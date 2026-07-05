@@ -8,11 +8,11 @@ import {
   Swords,
   ShieldHalf,
   Sparkles,
-  ScrollText,
   ChevronRight,
   LogOut,
   User,
   ShieldCheck,
+  KeyRound,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -96,12 +96,16 @@ export default function Layout({ children }: { children: ReactNode }) {
       <header className="h-[68px] shrink-0 flex items-center gap-4 px-4 md:px-6 border-b border-white/5 z-30">
         {/* Emblem */}
         <Link href="/" className="flex items-center gap-3 shrink-0 group">
-          <div className="w-11 h-11 rounded-full bg-primary/10 border border-primary/40 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
-            <ScrollText className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-full overflow-hidden border border-primary/40 bg-primary/10 group-hover:border-primary/70 transition-colors">
+            <img
+              src={`${import.meta.env.BASE_URL}favicon.png`}
+              alt="MSSClick"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="hidden lg:block leading-tight">
             <div className="font-serif font-extrabold text-foreground text-[0.95rem] tracking-tight">
-              PANEL
+              MSSClick
             </div>
             <div className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-primary">
               Faction
@@ -374,6 +378,16 @@ function AuthButton() {
             <User className="w-4 h-4" />
             Mon profil
           </Link>
+          {user.gerantFaction && (
+            <Link
+              href="/gerant"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-white/5 transition-colors border-t border-white/5"
+            >
+              <KeyRound className="w-4 h-4" />
+              Ma faction
+            </Link>
+          )}
           {isAdmin && (
             <Link
               href="/admin"

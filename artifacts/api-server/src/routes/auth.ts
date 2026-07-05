@@ -7,8 +7,8 @@ import {
   fetchDiscordUser,
   fetchDiscordGuildMember,
   detectFaction,
+  detectGerantFaction,
   RESPONSABLE_ID,
-  GERANT_ROLE_ID,
   type DiscordUser,
 } from "../lib/discord";
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
@@ -100,7 +100,7 @@ router.get("/auth/discord/callback", async (req, res) => {
       avatar: (user as DiscordUser).avatar ?? null,
       faction,
       isResponsable: (user as DiscordUser).id === RESPONSABLE_ID,
-      isGerant: roles.includes(GERANT_ROLE_ID),
+      gerantFaction: detectGerantFaction(roles),
     };
     res.cookie(SESSION_COOKIE, JSON.stringify(session), {
       httpOnly: true,
@@ -131,7 +131,7 @@ router.get("/auth/me", async (req, res) => {
       avatarUrl: buildAvatarUrl(user),
       faction: user.faction ?? null,
       isResponsable: user.isResponsable ?? false,
-      isGerant: user.isGerant ?? false,
+      gerantFaction: user.gerantFaction ?? null,
     },
     isAdmin: await isAdmin(user.id),
   });

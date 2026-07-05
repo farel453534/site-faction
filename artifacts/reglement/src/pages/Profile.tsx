@@ -19,7 +19,14 @@ const FACTION_COLORS: Record<string, string> = {
   Professeur: "bg-amber-950/60 border-amber-700/50 text-amber-300",
 };
 
-function ProfileBadges({ user }: { user: { faction: string | null; isResponsable: boolean; isGerant: boolean } }) {
+const GERANT_COLORS: Record<string, string> = {
+  Mangemort: "bg-red-950/60 border-red-600/50 text-red-300",
+  Auror: "bg-blue-950/60 border-blue-600/50 text-blue-300",
+  Ministère: "bg-purple-950/60 border-purple-600/50 text-purple-300",
+  "Mage-Indépendant": "bg-emerald-950/60 border-emerald-600/50 text-emerald-300",
+};
+
+function ProfileBadges({ user }: { user: { faction: string | null; isResponsable: boolean; gerantFaction: string | null } }) {
   return (
     <div className="flex flex-wrap items-center gap-2 mt-2">
       {user.isResponsable && (
@@ -27,9 +34,9 @@ function ProfileBadges({ user }: { user: { faction: string | null; isResponsable
           ⭐ Responsable
         </span>
       )}
-      {user.isGerant && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/50 bg-orange-950/50 px-3 py-0.5 text-xs font-semibold text-orange-300">
-          🔑 Gérant
+      {user.gerantFaction && (
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${GERANT_COLORS[user.gerantFaction] ?? "bg-orange-950/60 border-orange-500/50 text-orange-300"}`}>
+          🔑 Gérant {user.gerantFaction}
         </span>
       )}
       {user.faction && (
@@ -38,7 +45,7 @@ function ProfileBadges({ user }: { user: { faction: string | null; isResponsable
           {user.faction}
         </span>
       )}
-      {!user.isResponsable && !user.isGerant && !user.faction && (
+      {!user.isResponsable && !user.gerantFaction && !user.faction && (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-0.5 text-xs text-foreground/40">
           Aucune faction détectée
         </span>

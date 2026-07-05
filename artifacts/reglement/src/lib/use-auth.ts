@@ -9,7 +9,8 @@ export interface AuthUser {
   avatarUrl: string | null;
   faction: string | null;
   isResponsable: boolean;
-  isGerant: boolean;
+  /** Faction this user manages as gérant, or null if not a gérant. */
+  gerantFaction: string | null;
 }
 
 interface MeResponse {
@@ -175,6 +176,43 @@ const ADMIN_ERRORS: Record<string, string> = {
 
 function adminErrorMessage(code: string | undefined): string {
   return (code && ADMIN_ERRORS[code]) || "Une erreur est survenue.";
+}
+
+export interface GerantMember {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  points: number;
+  rank: number | null;
+  captures: number;
+}
+
+interface GerantMembersResponse {
+  faction: string;
+  members: GerantMember[];
+}
+
+export function useGerantMembers(enabled: boolean) {
+  return useQuery<GerantMembersResponse>({
+    queryKey: ["gerant", "members"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/gerant/members`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (data.error === "bot_token_missing") {
+          throw new Error("bot_token_missing");
+        }
+        throw new Error("Impossible de charger les membres");
+      }
+      return (await res.json()) as GerantMembersResponse;
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
 }
 
 export function useAddAdmin() {

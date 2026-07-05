@@ -10,6 +10,7 @@ import Reglement from "@/pages/Reglement";
 import RulePageView from "@/pages/RulePageView";
 import Profile from "@/pages/Profile";
 import Admin from "@/pages/Admin";
+import Gerant from "@/pages/Gerant";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/reglement" component={Reglement} />
       <Route path="/profil" component={Profile} />
       <Route path="/admin" component={Admin} />
+      <Route path="/gerant" component={Gerant} />
       <Route path="/:group/:page" component={RulePageView} />
       <Route component={NotFound} />
     </Switch>
