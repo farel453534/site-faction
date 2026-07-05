@@ -58,7 +58,12 @@ export async function requireAdmin(
 export async function listDbAdmins(): Promise<Admin[]> {
   const db = getAppDb();
   if (!db) return [];
-  return db.select().from(adminsTable).orderBy(adminsTable.createdAt);
+  try {
+    return await db.select().from(adminsTable).orderBy(adminsTable.createdAt);
+  } catch {
+    // Table not yet created (DB not initialised) — return empty list
+    return [];
+  }
 }
 
 export async function addAdmin(

@@ -28,7 +28,12 @@ router.get("/admin/panel-users", requireAdmin, async (req, res) => {
   const requestingUser = (req as AuthedRequest).user!;
   const canSeeIp = requestingUser.isResponsable;
   try {
-    const users = await listPanelUsers();
+    let users: Awaited<ReturnType<typeof listPanelUsers>> = [];
+    try {
+      users = await listPanelUsers();
+    } catch {
+      // Table not yet created — return empty list instead of 500
+    }
     return res.json({
       dbConfigured: true,
       users: users.map((u) => ({
