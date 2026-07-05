@@ -19,6 +19,7 @@ import {
   useAuth,
   useMyTickets,
   useFactionTickets,
+  useArchivedTickets,
   useTicketDetail,
   useCreateTicket,
   useAddTicketMessage,
@@ -43,7 +44,7 @@ const STATUS_COLORS: Record<TicketEntry["status"], string> = {
   closed: "bg-white/10 text-foreground/50 border-white/10",
 };
 
-type Scope = "mine" | { faction: string };
+type Scope = "mine" | "archives" | { faction: string };
 
 export default function Tickets() {
   const { user, isLoading: authLoading, login } = useAuth();
@@ -67,8 +68,10 @@ export default function Tickets() {
   const factionTickets = useFactionTickets(
     typeof scope === "object" ? scope.faction : null,
   );
+  const archived = useArchivedTickets(!!user?.isResponsable && scope === "archives");
 
-  const list = scope === "mine" ? mine : factionTickets;
+  const list =
+    scope === "mine" ? mine : scope === "archives" ? archived : factionTickets;
 
   if (authLoading) {
     return (
@@ -121,7 +124,11 @@ export default function Tickets() {
             Tickets
           </p>
           <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
-            {scope === "mine" ? "Mes tickets" : `Tickets · ${scope.faction}`}
+            {scope === "mine"
+              ? "Mes tickets"
+              : scope === "archives"
+                ? "Archives"
+                : `Tickets · ${scope.faction}`}
           </h1>
         </div>
       </header>
@@ -153,6 +160,19 @@ export default function Tickets() {
               Gestion · {f}
             </button>
           ))}
+          {user.isResponsable && (
+            <button
+              type="button"
+              onClick={() => setScope("archives")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                scope === "archives"
+                  ? "bg-primary/90 text-primary-foreground"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              Archives
+            </button>
+          )}
         </div>
 
         {user.faction && (

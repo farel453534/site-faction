@@ -323,6 +323,23 @@ export function useFactionTickets(faction: string | null) {
   });
 }
 
+export function useArchivedTickets(enabled: boolean) {
+  return useQuery<TicketEntry[]>({
+    queryKey: ["tickets", "archives"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/tickets?archives=1`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger les archives");
+      const data = (await res.json()) as { tickets: TicketEntry[] };
+      return data.tickets;
+    },
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
 export function useTicketDetail(ticketId: number | null) {
   return useQuery<TicketDetailResponse>({
     queryKey: ["tickets", "detail", ticketId],

@@ -124,6 +124,15 @@ export async function listFactionTickets(faction: string): Promise<Ticket[]> {
     .orderBy(desc(ticketsTable.updatedAt));
 }
 
+/** All closed tickets across every faction (Responsable-only archive view). */
+export async function listArchivedTickets(): Promise<Ticket[]> {
+  return db()
+    .select()
+    .from(ticketsTable)
+    .where(eq(ticketsTable.status, "closed"))
+    .orderBy(desc(ticketsTable.updatedAt));
+}
+
 export async function listMessages(ticketId: number): Promise<TicketMessage[]> {
   return db()
     .select()

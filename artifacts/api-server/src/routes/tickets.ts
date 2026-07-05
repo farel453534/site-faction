@@ -10,6 +10,7 @@ import {
   createTicket,
   listMyTickets,
   listFactionTickets,
+  listArchivedTickets,
   listMessages,
   listParticipants,
   addMessage,
@@ -108,14 +109,27 @@ router.post("/tickets", requireAuth, async (req, res) => {
 });
 
 // GET /tickets — list tickets. ?faction=X for the gérant management view
-// (must be one of the user's managed factions); otherwise returns "my tickets".
+// (must be one of the user's managed factions); ?archives=1 for the
+// Responsable-only view of all closed tickets; otherwise returns "my tickets".
+// Closed tickets are hidden from the regular "mine"/faction views — only the
+// Responsable's archives view surfaces them.
 router.get("/tickets", requireAuth, async (req, res) => {
   if (!dbGuard(res)) return;
   const user = (req as AuthedRequest).user!;
   const faction =
     typeof req.query["faction"] === "string" ? req.query["faction"] : null;
+  const archives = req.query["archives"] === "1";
 
   try {
+    if (archives) {
+      if (!user.isResponsable) {
+        res.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const tickets = await listArchivedTickets();
+      res.json({ tickets: tickets.map(serializeTicket) });
+      return;
+    }
     if (faction) {
       if (!user.gerantFactions.includes(faction) && !user.isResponsable) {
         res.status(403).json({ error: "not_gerant_of_faction" });
@@ -126,11 +140,15 @@ router.get("/tickets", requireAuth, async (req, res) => {
         return;
       }
       const tickets = await listFactionTickets(faction);
-      res.json({ tickets: tickets.map(serializeTicket) });
+      res.json({
+        tickets: tickets.filter((t) => t.status !== "closed").map(serializeTicket),
+      });
       return;
     }
     const tickets = await listMyTickets(user.id);
-    res.json({ tickets: tickets.map(serializeTicket) });
+    res.json({
+      tickets: tickets.filter((t) => t.status !== "closed").map(serializeTicket),
+    });
   } catch (err) {
     req.log.error({ err }, "Failed to list tickets");
     res.status(500).json({ error: "internal_error" });
