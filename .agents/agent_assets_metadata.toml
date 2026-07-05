@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "8W2bFH_3i5tKxRzqYHGH-"
+uri = "file://attached_assets/bot_mis_a_jour.txt"
+type = "text"
+title = "bot.py mis à jour (notifications tickets)"
