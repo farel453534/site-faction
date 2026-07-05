@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearch } from "wouter";
 import {
   ArrowLeft,
   Ticket as TicketIcon,
@@ -48,9 +48,20 @@ type Scope = "mine" | { faction: string };
 export default function Tickets() {
   const { user, isLoading: authLoading, login } = useAuth();
   const gerantFactions = user?.gerantFactions ?? [];
+  const search = useSearch();
   const [scope, setScope] = useState<Scope>("mine");
   const [openTicketId, setOpenTicketId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+
+  // Deep link support: ?id=123 (from Discord notifications) opens the ticket directly.
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const idParam = params.get("id");
+    if (idParam) {
+      const id = Number(idParam);
+      if (Number.isInteger(id)) setOpenTicketId(id);
+    }
+  }, [search]);
 
   const mine = useMyTickets(!!user);
   const factionTickets = useFactionTickets(

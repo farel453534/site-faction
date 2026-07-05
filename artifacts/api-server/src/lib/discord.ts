@@ -323,6 +323,7 @@ export async function notifyNewTicket(ticket: {
   category: string;
   subject: string;
   authorUsername: string;
+  url?: string;
 }): Promise<void> {
   const guildId = process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404";
   const label = ticket.category === "plainte" ? "Plainte" : "Demande";
@@ -330,7 +331,8 @@ export async function notifyNewTicket(ticket: {
     `📩 Nouvelle **${label}** — Faction **${ticket.faction}**\n` +
     `Auteur : ${ticket.authorUsername}\n` +
     `Sujet : ${ticket.subject}\n` +
-    `Ticket #${ticket.id}`;
+    `Ticket #${ticket.id}` +
+    (ticket.url ? `\n🔗 ${ticket.url}` : "");
 
   const gerantRole = GERANT_FACTION_ROLES.find(
     (g) => g.faction === ticket.faction,

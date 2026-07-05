@@ -14,6 +14,7 @@ import {
 } from "../lib/discord";
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
 import { isAdmin } from "../lib/admin";
+import { getBaseUrl } from "../lib/request-url";
 
 const router: IRouter = Router();
 
@@ -21,18 +22,6 @@ const STATE_COOKIE = "mss_oauth_state";
 const sameSite =
   (process.env["COOKIE_SAMESITE"] as "lax" | "none" | "strict" | undefined) ??
   "lax";
-
-function getBaseUrl(req: Request): string {
-  const proto =
-    (req.headers["x-forwarded-proto"] as string | undefined)
-      ?.split(",")[0]
-      ?.trim() || req.protocol;
-  const host =
-    (req.headers["x-forwarded-host"] as string | undefined)
-      ?.split(",")[0]
-      ?.trim() || req.get("host");
-  return `${proto}://${host}`;
-}
 
 function getRedirectUri(req: Request): string {
   return (

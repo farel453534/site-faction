@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { FACTION_ROLES, notifyNewTicket } from "../lib/discord";
+import { buildTicketUrl } from "../lib/request-url";
 import { isAppDbConfigured } from "../lib/app-db";
 import { requireAuth, type AuthedRequest } from "../lib/session";
 import {
@@ -95,6 +96,7 @@ router.post("/tickets", requireAuth, async (req, res) => {
       category: ticket.category,
       subject: ticket.subject,
       authorUsername: ticket.authorUsername,
+      url: buildTicketUrl(req, ticket.id),
     }).catch((err) => {
       req.log.error({ err }, "Failed to notify Discord for new ticket");
     });
