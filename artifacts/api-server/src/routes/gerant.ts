@@ -66,9 +66,14 @@ router.get("/gerant/members", requireGerant, async (req, res) => {
     // Build a lookup map: discordId → leaderboard entry
     const statsMap = new Map(leaderboard.map((e) => [e.userId, e]));
 
-    // Fetch Steam IDs from panel profiles
+    // Fetch Steam IDs from panel profiles (best-effort — never fails the request)
     const memberIds = members.map((m) => m.id);
-    const steamMap = await getSteamIds(memberIds);
+    let steamMap: Map<string, string>;
+    try {
+      steamMap = await getSteamIds(memberIds);
+    } catch {
+      steamMap = new Map();
+    }
 
     const result = members.map((m) => {
       const stats = statsMap.get(m.id);
