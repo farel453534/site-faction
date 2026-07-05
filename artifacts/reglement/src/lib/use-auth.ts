@@ -625,6 +625,37 @@ export function usePanelUsers(enabled: boolean) {
   });
 }
 
+// ─── Role members ────────────────────────────────────────────────────────────
+
+export interface RoleMember {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+interface RoleMembersResponse {
+  roleId: string;
+  members: RoleMember[];
+}
+
+export function useRoleMembers(roleId: string, enabled: boolean) {
+  return useQuery<RoleMembersResponse>({
+    queryKey: ["admin", "role-members", roleId],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(
+        `${API_BASE}/api/admin/role-members?roleId=${encodeURIComponent(roleId)}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error("Impossible de charger les membres du rôle");
+      return (await res.json()) as RoleMembersResponse;
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
 // ─── My profile (steamId) ────────────────────────────────────────────────────
 
 interface MyProfileResponse {

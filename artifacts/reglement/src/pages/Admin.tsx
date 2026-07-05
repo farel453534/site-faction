@@ -25,13 +25,17 @@ import {
   useAddAdmin,
   useRemoveAdmin,
   usePanelUsers,
+  useRoleMembers,
   type LeaderboardEntry,
   type CaptureEntry,
   type AdminEntry,
   type PanelUser,
+  type RoleMember,
 } from "@/lib/use-auth";
 
-type AdminTab = "stats" | "admins" | "panel-users";
+const MAGE_INDEPENDANT_ROLE = "1062740125475426411";
+
+type AdminTab = "stats" | "admins" | "panel-users" | "role-members";
 
 function playerName(p: { displayName: string | null; userId: string }): string {
   if (p.displayName) return p.displayName;
@@ -47,6 +51,7 @@ export default function Admin() {
   const [tab, setTab] = useState<AdminTab>("stats");
   const detail = useAdminPlayerStats(selected);
   const panelUsers = usePanelUsers(!!user && isAdmin && tab === "panel-users");
+  const roleMembers = useRoleMembers(MAGE_INDEPENDANT_ROLE, !!user && isAdmin && tab === "role-members");
 
   const filtered = useMemo(() => {
     const list = players.data ?? [];
@@ -133,6 +138,8 @@ export default function Admin() {
           <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
             {tab === "stats"
               ? "Statistiques des joueurs"
+              : tab === "role-members"
+              ? "Mages Indépendants"
               : "Gestion des administrateurs"}
           </h1>
         </div>
@@ -174,6 +181,18 @@ export default function Admin() {
         >
           <MonitorSmartphone className="w-4 h-4" />
           Membres connectés
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("role-members")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            tab === "role-members"
+              ? "bg-primary/90 text-primary-foreground"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <FaDiscord className="w-4 h-4" />
+          Mages Indépendants
         </button>
       </div>
 
@@ -247,6 +266,8 @@ export default function Admin() {
       {tab === "admins" && <AdminsManager currentUserId={user.id} />}
 
       {tab === "panel-users" && <PanelUsersTab data={panelUsers} isResponsable={user.isResponsable ?? false} />}
+
+      {tab === "role-members" && <RoleMembersTab data={roleMembers} />}
 
       {selectedPlayer && (
         <PlayerDetail
@@ -557,8 +578,9 @@ function PanelUsersTab({
 
       {data.data?.dbConfigured && (
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
+          <div className={`grid ${isResponsable ? "grid-cols-[1fr_auto_auto_auto_auto]" : "grid-cols-[1fr_auto_auto_auto]"} gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45`}>
             <span>Membre</span>
+            {isResponsable && <span className="text-center">IP</span>}
             <span className="text-center">Faction</span>
             <span className="text-center">Steam ID</span>
             <span className="text-right">Dernière co.</span>
@@ -585,21 +607,17 @@ function PanelUsersTab({
 
 function PanelUserRow({ user, isResponsable }: { user: PanelUser; isResponsable: boolean }) {
   const lastSeen = new Date(user.lastSeenAt);
-  const firstSeen = new Date(user.firstSeenAt);
   const dateStr = lastSeen.toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",
-  });
-  const firstDateStr = firstSeen.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   return (
     <li className="px-4 py-3 border-b border-white/[0.04] last:border-b-0">
-      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 items-start">
+      <div className={`grid ${isResponsable ? "grid-cols-[1fr_auto_auto_auto_auto]" : "grid-cols-[1fr_auto_auto_auto]"} gap-3 items-center`}>
         <div className="min-w-0">
           <p className="font-medium text-foreground truncate">
             {user.globalName ?? user.username}
@@ -607,30 +625,109 @@ function PanelUserRow({ user, isResponsable }: { user: PanelUser; isResponsable:
           <p className="text-xs text-foreground/40 font-mono truncate">
             {user.discordId}
           </p>
-          {/* Infos visibles uniquement par le responsable */}
-          {isResponsable && (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
-              <span className="text-[0.65rem] text-foreground/35 font-mono">
-                IP : {user.lastIp ?? <span className="italic">inconnue</span>}
-              </span>
-              <span className="text-[0.65rem] text-foreground/30">
-                1ère co. : {firstDateStr}
-              </span>
-            </div>
-          )}
         </div>
+        {isResponsable && (
+          <span className="text-xs font-mono text-foreground/70 px-2 text-center tabular-nums">
+            {user.lastIp ?? <span className="text-foreground/25 not-italic">—</span>}
+          </span>
+        )}
         <span className="text-xs text-foreground/60 px-2 text-center">
           {user.faction ?? <span className="text-foreground/30">—</span>}
         </span>
         <span className="text-xs font-mono text-foreground/60 px-2 text-center">
-          {user.steamId ? (
-            user.steamId
-          ) : (
-            <span className="text-foreground/25">—</span>
-          )}
+          {user.steamId ?? <span className="text-foreground/25">—</span>}
         </span>
-        <span className="text-xs text-foreground/40 text-right shrink-0">{dateStr}</span>
+        <span className="text-xs text-foreground/40 text-right shrink-0 tabular-nums">{dateStr}</span>
       </div>
+    </li>
+  );
+}
+
+// ─── Role Members tab ─────────────────────────────────────────────────────────
+
+function RoleMembersTab({ data }: { data: ReturnType<typeof useRoleMembers> }) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const list = data.data?.members ?? [];
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (m) =>
+        m.displayName.toLowerCase().includes(q) ||
+        m.username.toLowerCase().includes(q) ||
+        m.id.includes(q),
+    );
+  }, [data.data, search]);
+
+  return (
+    <div className="space-y-5">
+      <div className="relative max-w-md">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher par nom ou Discord ID…"
+          className="w-full rounded-full bg-white/[0.04] border border-white/10 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
+        />
+      </div>
+
+      {data.isLoading && (
+        <div className="h-64 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      )}
+
+      {data.isError && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
+          Impossible de charger la liste. Vérifie que le bot Discord est configuré (DISCORD_BOT_TOKEN).
+        </div>
+      )}
+
+      {data.data && (
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+          <div className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
+            <span>Membre</span>
+            <span className="text-right">Discord ID</span>
+          </div>
+          {filtered.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-foreground/50">
+              {search ? "Aucun membre trouvé." : "Aucun membre avec ce rôle."}
+            </p>
+          ) : (
+            <ul>
+              {filtered.map((m) => (
+                <RoleMemberRow key={m.id} member={m} />
+              ))}
+            </ul>
+          )}
+          <div className="px-4 py-2.5 border-t border-white/[0.06] text-[0.68rem] text-foreground/35">
+            {data.data.members.length} membre{data.data.members.length !== 1 ? "s" : ""}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoleMemberRow({ member }: { member: RoleMember }) {
+  return (
+    <li className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.04] last:border-b-0">
+      {member.avatarUrl ? (
+        <img
+          src={member.avatarUrl}
+          alt=""
+          className="w-9 h-9 rounded-xl object-cover shrink-0"
+        />
+      ) : (
+        <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <FaDiscord className="w-4 h-4 text-primary" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-foreground truncate">{member.displayName}</p>
+        <p className="text-xs text-foreground/40 font-mono truncate">@{member.username}</p>
+      </div>
+      <span className="text-xs font-mono text-foreground/35 shrink-0">{member.id}</span>
     </li>
   );
 }

@@ -10,6 +10,7 @@ import {
 import { isAppDbConfigured } from "../lib/app-db";
 import { getLeaderboard, getPlayerStats } from "../lib/game-db";
 import { listPanelUsers } from "../lib/user-profiles";
+import { fetchFactionMembers, buildAvatarUrl } from "../lib/discord";
 import type { AuthedRequest } from "../lib/session";
 
 const router: IRouter = Router();
@@ -169,6 +170,41 @@ router.delete("/admin/admins/:discordId", requireAdmin, async (req, res) => {
       return;
     }
     req.log.error({ err }, "Failed to remove admin");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+/**
+ * GET /api/admin/role-members?roleId=xxx
+ * Retourne tous les membres Discord ayant un rôle donné. Réservé aux admins.
+ * Nécessite DISCORD_BOT_TOKEN.
+ */
+router.get("/admin/role-members", requireAdmin, async (req, res) => {
+  const roleId =
+    typeof req.query["roleId"] === "string" ? req.query["roleId"].trim() : "";
+  if (!roleId) {
+    res.status(400).json({ error: "roleId_required" });
+    return;
+  }
+  const hasBotToken = !!process.env["DISCORD_BOT_TOKEN"];
+  if (!hasBotToken) {
+    res.status(503).json({ error: "bot_token_missing" });
+    return;
+  }
+  try {
+    const guildId = process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404";
+    const members = await fetchFactionMembers(guildId, roleId);
+    res.json({
+      roleId,
+      members: members.map((m) => ({
+        id: m.id,
+        username: m.username,
+        displayName: m.globalName ?? m.username,
+        avatarUrl: buildAvatarUrl({ id: m.id, avatar: m.avatar }),
+      })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch role members");
     res.status(500).json({ error: "internal_error" });
   }
 });
