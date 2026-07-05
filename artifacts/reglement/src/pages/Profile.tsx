@@ -30,9 +30,14 @@ function ProfileBadges({ user }: { user: { faction: string | null; grade: string
   return (
     <div className="flex flex-wrap items-center gap-2 mt-2">
       {user.isResponsable && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-500/60 bg-yellow-950/50 px-3 py-0.5 text-xs font-bold text-yellow-300 tracking-wide">
-          ⭐ Responsable
-        </span>
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-500/60 bg-yellow-950/50 px-3 py-0.5 text-xs font-bold text-yellow-300 tracking-wide">
+            ⭐ Responsable
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-500/50 bg-fuchsia-950/40 px-3 py-0.5 text-xs font-semibold text-fuchsia-300 tracking-wide">
+            🛡️ Accès total
+          </span>
+        </>
       )}
       {!user.isResponsable && user.gerantFactions.map((f) => (
         <span key={f} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${GERANT_COLORS[f] ?? "bg-orange-950/60 border-orange-500/50 text-orange-300"}`}>
