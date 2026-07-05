@@ -208,9 +208,10 @@ export default function Gerant() {
                 </span>
               </div>
               <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-                <div className="grid grid-cols-[auto_1fr_auto_auto] gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
+                <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45">
                   <span className="w-8" />
                   <span>Membre</span>
+                  <span className="text-center">Steam ID</span>
                   <span className="text-right">Réputation</span>
                   <span className="text-right pl-3">Captures</span>
                 </div>
@@ -243,7 +244,7 @@ export default function Gerant() {
 
 function MemberRow({ member }: { member: GerantMember }) {
   return (
-    <li className="grid grid-cols-[auto_1fr_auto_auto] gap-3 px-4 py-3 items-center border-b border-white/[0.04] last:border-b-0">
+    <li className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-4 py-3 items-center border-b border-white/[0.04] last:border-b-0">
       {member.avatarUrl ? (
         <img src={member.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
       ) : (
@@ -262,13 +263,17 @@ function MemberRow({ member }: { member: GerantMember }) {
               {member.grade}
             </span>
           )}
-          {member.steamId && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[0.65rem] font-mono text-primary/80">
-              <Gamepad2 className="w-3 h-3" />
-              {member.steamId}
-            </span>
-          )}
         </div>
+      </div>
+      <div className="text-center">
+        {member.steamId ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[0.65rem] font-mono text-primary/80">
+            <Gamepad2 className="w-3 h-3" />
+            {member.steamId}
+          </span>
+        ) : (
+          <span className="text-foreground/25 text-xs">—</span>
+        )}
       </div>
       <div className="text-right">
         <div className="flex items-center gap-1.5 justify-end">

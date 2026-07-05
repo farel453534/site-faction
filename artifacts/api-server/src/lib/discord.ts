@@ -27,7 +27,7 @@ export const FACTION_ROLES: Array<{ id: string; name: string }> = [
   { id: "1062740125605449874", name: "Mangemort" },
   { id: "1062740125517348875", name: "Auror" },
   { id: "1062740125559300163", name: "Ministère" },
-  { id: "1399123619145187328", name: "Mage-Indépendant" },
+  { id: "1062740125475426411", name: "Mage-Indépendant" },
   { id: "1062740125475426409", name: "Professeur" },
 ];
 
