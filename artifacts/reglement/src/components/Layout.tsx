@@ -201,17 +201,15 @@ export default function Layout({ children }: { children: ReactNode }) {
           <div className="h-px w-7 bg-white/10 my-1" />
           {ruleGroups.map((group) => {
             const Icon = groupIcons[group.slug] ?? BookOpen;
-            const active = currentGroupSlug === group.slug || openFlyout === group.slug;
+            const active = currentGroupSlug === group.slug;
             return (
               <RailButton
                 key={group.slug}
-                as="button"
+                as="link"
+                href={`/${group.slug}`}
                 icon={Icon}
                 label={group.title}
                 active={active}
-                onClick={() =>
-                  setOpenFlyout((cur) => (cur === group.slug ? null : group.slug))
-                }
               />
             );
           })}

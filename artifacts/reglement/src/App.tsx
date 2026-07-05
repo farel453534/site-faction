@@ -13,6 +13,7 @@ import Profile from "@/pages/Profile";
 import Admin from "@/pages/Admin";
 import Gerant from "@/pages/Gerant";
 import Tickets from "@/pages/Tickets";
+import GroupView from "@/pages/GroupView";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/gerant" component={Gerant} />
       <Route path="/tickets" component={Tickets} />
       <Route path="/:group/:page" component={RulePageView} />
+      <Route path="/:group" component={GroupView} />
       <Route component={NotFound} />
     </Switch>
   );
