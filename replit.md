@@ -2,6 +2,10 @@
 
 A dark rules-reference site for a Harry Potter roleplay FiveM server faction. Displays the full faction règlement in expandable accordion cards. Theme: black + gold, modern sans-serif. Branded "Règlement Faction" (NOT "Ministère").
 
+## Current status
+
+The project is imported but **not yet running on Replit**. Both the `Règlement Faction` and `API Server` workflows are currently failing. To get the app running, Task #2 ("Get the app running on Replit") covers the full setup — you need to set the `DATABASE_URL` secret and push the DB schema first.
+
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
