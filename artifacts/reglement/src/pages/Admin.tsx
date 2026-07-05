@@ -182,18 +182,6 @@ export default function Admin() {
           <MonitorSmartphone className="w-4 h-4" />
           Membres connectés
         </button>
-        <button
-          type="button"
-          onClick={() => setTab("role-members")}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-            tab === "role-members"
-              ? "bg-primary/90 text-primary-foreground"
-              : "text-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <FaDiscord className="w-4 h-4" />
-          Mages Indépendants
-        </button>
       </div>
 
       {tab === "stats" && (
@@ -578,8 +566,9 @@ function PanelUsersTab({
 
       {data.data?.dbConfigured && (
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-          <div className={`grid ${isResponsable ? "grid-cols-[1fr_auto_auto_auto_auto]" : "grid-cols-[1fr_auto_auto_auto]"} gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45`}>
+          <div className={`grid ${isResponsable ? "grid-cols-[1fr_auto_auto_auto_auto_auto]" : "grid-cols-[1fr_auto_auto_auto_auto]"} gap-3 px-4 py-3 border-b border-white/10 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-foreground/45`}>
             <span>Membre</span>
+            <span className="text-center">Discord ID</span>
             {isResponsable && <span className="text-center">IP</span>}
             <span className="text-center">Faction</span>
             <span className="text-center">Steam ID</span>
@@ -617,15 +606,18 @@ function PanelUserRow({ user, isResponsable }: { user: PanelUser; isResponsable:
 
   return (
     <li className="px-4 py-3 border-b border-white/[0.04] last:border-b-0">
-      <div className={`grid ${isResponsable ? "grid-cols-[1fr_auto_auto_auto_auto]" : "grid-cols-[1fr_auto_auto_auto]"} gap-3 items-center`}>
+      <div className={`grid ${isResponsable ? "grid-cols-[1fr_auto_auto_auto_auto_auto]" : "grid-cols-[1fr_auto_auto_auto_auto]"} gap-3 items-center`}>
         <div className="min-w-0">
           <p className="font-medium text-foreground truncate">
             {user.globalName ?? user.username}
           </p>
           <p className="text-xs text-foreground/40 font-mono truncate">
-            {user.discordId}
+            @{user.username}
           </p>
         </div>
+        <span className="text-xs font-mono text-foreground/60 px-2 text-center tabular-nums">
+          {user.discordId}
+        </span>
         {isResponsable && (
           <span className="text-xs font-mono text-foreground/70 px-2 text-center tabular-nums">
             {user.lastIp ?? <span className="text-foreground/25 not-italic">—</span>}
