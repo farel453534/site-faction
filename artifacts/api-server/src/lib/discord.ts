@@ -243,3 +243,116 @@ export function buildAvatarUrl(user: {
   if (!user.avatar) return null;
   return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`;
 }
+
+// Channel where every plainte/demande is logged, visible to the Responsable/admins.
+export const TICKETS_LOG_CHANNEL_ID = "1520876965953929326";
+
+function getBotToken(): string {
+  const token = process.env["DISCORD_BOT_TOKEN"];
+  if (!token) throw new Error("DISCORD_BOT_TOKEN not configured");
+  return token;
+}
+
+/** Sends a message to a channel using the bot token. */
+export async function sendChannelMessage(
+  channelId: string,
+  content: string,
+): Promise<void> {
+  const botToken = getBotToken();
+  const resp = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${botToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content }),
+  });
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Discord channel message failed: ${resp.status} ${text}`);
+  }
+}
+
+/** Sends a direct message to a user using the bot token (opens a DM channel first). */
+export async function sendDirectMessage(
+  userId: string,
+  content: string,
+): Promise<void> {
+  const botToken = getBotToken();
+  const dmResp = await fetch(`${DISCORD_API}/users/@me/channels`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${botToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ recipient_id: userId }),
+  });
+  if (!dmResp.ok) {
+    const text = await dmResp.text();
+    throw new Error(`Discord DM channel creation failed: ${dmResp.status} ${text}`);
+  }
+  const dmChannel = (await dmResp.json()) as { id: string };
+
+  const msgResp = await fetch(
+    `${DISCORD_API}/channels/${dmChannel.id}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ content }),
+    },
+  );
+  if (!msgResp.ok) {
+    const text = await msgResp.text();
+    throw new Error(`Discord DM send failed: ${msgResp.status} ${text}`);
+  }
+}
+
+/**
+ * Notifies everyone who should know about a new ticket:
+ * - DMs every gérant of the ticket's faction (their gérant role, not other factions').
+ * - Posts a summary in the shared tickets log channel (visible to Responsable/admins).
+ * DM failures for individual gérants are swallowed (e.g. DMs closed) so one failure
+ * doesn't block the others or the channel log.
+ */
+export async function notifyNewTicket(ticket: {
+  id: number;
+  faction: string;
+  category: string;
+  subject: string;
+  authorUsername: string;
+}): Promise<void> {
+  const guildId = process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404";
+  const label = ticket.category === "plainte" ? "Plainte" : "Demande";
+  const summary =
+    `📩 Nouvelle **${label}** — Faction **${ticket.faction}**\n` +
+    `Auteur : ${ticket.authorUsername}\n` +
+    `Sujet : ${ticket.subject}\n` +
+    `Ticket #${ticket.id}`;
+
+  const gerantRole = GERANT_FACTION_ROLES.find(
+    (g) => g.faction === ticket.faction,
+  );
+  if (gerantRole) {
+    try {
+      const gerants = await fetchFactionMembers(guildId, gerantRole.id);
+      await Promise.all(
+        gerants.map((g) =>
+          sendDirectMessage(g.id, summary).catch((err) => {
+            console.error(`Failed to DM gérant ${g.id}:`, err);
+          }),
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to fetch/notify gérants for new ticket:", err);
+    }
+  }
+
+  try {
+    await sendChannelMessage(TICKETS_LOG_CHANNEL_ID, summary);
+  } catch (err) {
+    console.error("Failed to post ticket to log channel:", err);
+  }
+}

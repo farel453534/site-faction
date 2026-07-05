@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { FACTION_ROLES } from "../lib/discord";
+import { FACTION_ROLES, notifyNewTicket } from "../lib/discord";
 import { isAppDbConfigured } from "../lib/app-db";
 import { requireAuth, type AuthedRequest } from "../lib/session";
 import {
@@ -88,6 +88,15 @@ router.post("/tickets", requireAuth, async (req, res) => {
       authorId: user.id,
       authorUsername: user.global_name || user.username,
       body: message,
+    });
+    notifyNewTicket({
+      id: ticket.id,
+      faction: ticket.faction,
+      category: ticket.category,
+      subject: ticket.subject,
+      authorUsername: ticket.authorUsername,
+    }).catch((err) => {
+      req.log.error({ err }, "Failed to notify Discord for new ticket");
     });
     res.status(201).json({ ticket: serializeTicket(ticket) });
   } catch (err) {
