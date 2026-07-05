@@ -7,6 +7,7 @@ import {
   fetchDiscordUser,
   fetchDiscordGuildMember,
   detectFaction,
+  detectGrade,
   detectGerantFactions,
   RESPONSABLE_ID,
   type DiscordUser,
@@ -99,6 +100,7 @@ router.get("/auth/discord/callback", async (req, res) => {
       global_name: (user as DiscordUser).global_name ?? null,
       avatar: (user as DiscordUser).avatar ?? null,
       faction,
+      grade: detectGrade(faction, roles),
       isResponsable: (user as DiscordUser).id === RESPONSABLE_ID,
       gerantFactions: detectGerantFactions(roles),
     };
@@ -130,6 +132,7 @@ router.get("/auth/me", async (req, res) => {
       displayName: user.global_name || user.username,
       avatarUrl: buildAvatarUrl(user),
       faction: user.faction ?? null,
+      grade: user.grade ?? null,
       isResponsable: user.isResponsable ?? false,
       gerantFactions: user.gerantFactions ?? [],
     },

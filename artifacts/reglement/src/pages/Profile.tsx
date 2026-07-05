@@ -26,7 +26,7 @@ const GERANT_COLORS: Record<string, string> = {
   "Mage-Indépendant": "bg-emerald-950/60 border-emerald-600/50 text-emerald-300",
 };
 
-function ProfileBadges({ user }: { user: { faction: string | null; isResponsable: boolean; gerantFactions: string[] } }) {
+function ProfileBadges({ user }: { user: { faction: string | null; grade: string | null; isResponsable: boolean; gerantFactions: string[] } }) {
   return (
     <div className="flex flex-wrap items-center gap-2 mt-2">
       {user.isResponsable && (
@@ -43,6 +43,11 @@ function ProfileBadges({ user }: { user: { faction: string | null; isResponsable
         <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${FACTION_COLORS[user.faction] ?? "bg-white/5 border-white/10 text-foreground/70"}`}>
           <ShieldHalf className="w-3 h-3" />
           {user.faction}
+        </span>
+      )}
+      {user.grade && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-0.5 text-xs font-semibold text-foreground/80">
+          {user.grade}
         </span>
       )}
       {!user.isResponsable && user.gerantFactions.length === 0 && !user.faction && (

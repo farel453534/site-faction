@@ -3,6 +3,7 @@ import {
   FACTION_ROLES,
   fetchFactionMembers,
   buildAvatarUrl,
+  detectGrade,
 } from "../lib/discord";
 import { getLeaderboard } from "../lib/game-db";
 import { readSession, type AuthedRequest } from "../lib/session";
@@ -71,6 +72,7 @@ router.get("/gerant/members", requireGerant, async (req, res) => {
         username: m.username,
         displayName: m.globalName ?? m.username,
         avatarUrl: buildAvatarUrl({ id: m.id, avatar: m.avatar }),
+        grade: detectGrade(factionName, m.roles),
         points: stats?.points ?? 0,
         rank: stats?.rank ?? null,
         captures: stats?.captures ?? 0,

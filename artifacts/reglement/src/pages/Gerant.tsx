@@ -254,9 +254,16 @@ function MemberRow({ member }: { member: GerantMember }) {
       )}
       <div className="min-w-0">
         <p className="font-medium text-foreground truncate">{member.displayName}</p>
-        {member.displayName !== member.username && (
-          <p className="text-xs text-foreground/40 truncate">{member.username}</p>
-        )}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {member.displayName !== member.username && (
+            <p className="text-xs text-foreground/40 truncate">{member.username}</p>
+          )}
+          {member.grade && (
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.06] px-2 py-0.5 text-[0.65rem] font-semibold text-foreground/70">
+              {member.grade}
+            </span>
+          )}
+        </div>
       </div>
       <div className="text-right">
         <div className="flex items-center gap-1.5 justify-end">

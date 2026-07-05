@@ -8,6 +8,8 @@ export interface SessionUser {
   global_name: string | null;
   avatar: string | null;
   faction: string | null;
+  /** Highest grade role held within `faction`, or null if none/no faction. */
+  grade: string | null;
   isResponsable: boolean;
   /** All factions this user manages as gérant (a user can hold several gérant roles). */
   gerantFactions: string[];

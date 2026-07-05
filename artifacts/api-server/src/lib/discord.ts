@@ -46,6 +46,46 @@ export function detectFaction(roles: string[]): string | null {
   return null;
 }
 
+// Grade role IDs per faction, ordered from highest to lowest rank
+// (order matters: first match wins, so the highest grade held is returned).
+export const GRADE_ROLES: Array<{
+  id: string;
+  name: string;
+  faction: string;
+}> = [
+  // Mangemort
+  { id: "1062740125605449872", name: "Maître Mangemort", faction: "Mangemort" },
+  { id: "1062740125605449871", name: "Membre du Conseil", faction: "Mangemort" },
+  { id: "1062740125605449870", name: "Mangemort Expérimenté", faction: "Mangemort" },
+  { id: "1062740125605449869", name: "Mangemort", faction: "Mangemort" },
+  { id: "1062740125605449868", name: "Recrue Mangemort", faction: "Mangemort" },
+  // Auror
+  { id: "1062740125517348874", name: "Chef Auror", faction: "Auror" },
+  { id: "1062740125496385546", name: "Commandant Auror", faction: "Auror" },
+  { id: "1062740125496385545", name: "Auror Expérimenté", faction: "Auror" },
+  { id: "1062740125496385544", name: "Auror", faction: "Auror" },
+  { id: "1062740125496385543", name: "Recrue Auror", faction: "Auror" },
+  // Ministère
+  { id: "1062740125559300161", name: "Ministre de la Magie", faction: "Ministère" },
+  { id: "1074935011716903005", name: "Ministre Adjoint", faction: "Ministère" },
+  { id: "1062740125559300160", name: "Secrétaire d'état", faction: "Ministère" },
+  { id: "1062740125559300159", name: "Sous-Secrétaire d'état", faction: "Ministère" },
+  { id: "1062740125559300157", name: "Directeur de Département", faction: "Ministère" },
+  { id: "1062740125559300156", name: "Sous-Directeur de Département", faction: "Ministère" },
+  { id: "1062740125534146690", name: "Membre Expérimenté du Ministère", faction: "Ministère" },
+  { id: "1062740125534146689", name: "Membre du Ministère", faction: "Ministère" },
+  { id: "1062740125534146688", name: "Nouveau Membre du Ministère", faction: "Ministère" },
+];
+
+/** Returns the highest grade role held within a given faction, or null. */
+export function detectGrade(faction: string | null, roles: string[]): string | null {
+  if (!faction) return null;
+  for (const { id, name, faction: gradeFaction } of GRADE_ROLES) {
+    if (gradeFaction === faction && roles.includes(id)) return name;
+  }
+  return null;
+}
+
 /** Returns ALL factions the user is gérant of (a user can hold several gérant roles). */
 export function detectGerantFactions(roles: string[]): string[] {
   const factions = new Set<string>();
@@ -60,6 +100,7 @@ export interface GuildMemberSummary {
   username: string;
   globalName: string | null;
   avatar: string | null;
+  roles: string[];
 }
 
 type RawMember = {
@@ -116,6 +157,7 @@ export async function fetchFactionMembers(
       id: m.user.id,
       username: m.user.username,
       globalName: m.user.global_name,
+      roles: m.roles,
       avatar: m.user.avatar,
     }));
 }

@@ -8,6 +8,8 @@ export interface AuthUser {
   displayName: string;
   avatarUrl: string | null;
   faction: string | null;
+  /** Highest grade role held within `faction`, or null. */
+  grade: string | null;
   isResponsable: boolean;
   /** All factions this user manages as gérant (a user can hold several gérant roles). */
   gerantFactions: string[];
@@ -183,6 +185,7 @@ export interface GerantMember {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  grade: string | null;
   points: number;
   rank: number | null;
   captures: number;
