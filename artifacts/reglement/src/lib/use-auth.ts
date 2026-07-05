@@ -361,6 +361,7 @@ export function useTicketDetail(ticketId: number | null) {
       return (await res.json()) as TicketDetailResponse;
     },
     staleTime: 5_000,
+    refetchInterval: 5_000,
     retry: false,
   });
 }
