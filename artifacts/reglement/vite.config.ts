@@ -84,15 +84,18 @@ function queryGmod(): Promise<{ online: true; players: number; maxPlayers: numbe
 }
 
 // Cache polled in the background every 30s — browser gets an instant response
-type CachedStatus = { online: boolean; players: number | null; maxPlayers: number | null };
-let cachedStatus: CachedStatus = { online: false, players: null, maxPlayers: null };
+type CachedStatus = { online: boolean; players: number | null; maxPlayers: number | null; dev: true };
+let cachedStatus: CachedStatus = { online: false, players: null, maxPlayers: null, dev: true };
+
+// Keep a reference to the in-flight poll so transformIndexHtml can await it
+let currentPoll: Promise<void> = Promise.resolve();
 
 async function pollOnce() {
   try {
     const info = await queryGmod();
-    cachedStatus = { online: true, players: info.players, maxPlayers: info.maxPlayers };
+    cachedStatus = { online: true, players: info.players, maxPlayers: info.maxPlayers, dev: true };
   } catch {
-    cachedStatus = { online: false, players: null, maxPlayers: null };
+    cachedStatus = { online: false, players: null, maxPlayers: null, dev: true };
   }
 }
 
@@ -100,8 +103,9 @@ function serverStatusPlugin(): Plugin {
   return {
     name: "server-status",
     apply: "serve", // dev server only — never runs during production build
-    // Inject cached status directly into every HTML response — no browser fetch needed
-    transformIndexHtml() {
+    // Await the current poll so the first HTML response always has fresh data
+    async transformIndexHtml() {
+      await currentPoll;
       return [
         {
           tag: "script",
@@ -112,9 +116,9 @@ function serverStatusPlugin(): Plugin {
       ];
     },
     configureServer(server) {
-      // Poll immediately then every 30s so the cache stays fresh
-      pollOnce();
-      const interval = setInterval(pollOnce, 30_000);
+      // Poll immediately — transformIndexHtml awaits this before responding
+      currentPoll = pollOnce();
+      const interval = setInterval(() => { currentPoll = pollOnce(); }, 30_000);
       server.httpServer?.on("close", () => clearInterval(interval));
     },
   };

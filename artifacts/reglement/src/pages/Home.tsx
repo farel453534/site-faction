@@ -17,7 +17,7 @@ import { useAuth } from "@/lib/use-auth";
 
 declare global {
   interface Window {
-    __GMOD_STATUS__?: { online: boolean; players: number | null; maxPlayers: number | null };
+    __GMOD_STATUS__?: { online: boolean; players: number | null; maxPlayers: number | null; dev?: true };
   }
 }
 
@@ -35,17 +35,21 @@ type PlayerCountState =
 
 function useServerPlayerCount(): PlayerCountState {
   const injected = window.__GMOD_STATUS__;
-  const hasInjected = injected?.online === true && typeof injected.players === "number";
+  // `dev: true` means the Vite plugin injected fresh data — no fetch needed
+  const isDevInjection = injected?.dev === true;
 
-  const [state, setState] = useState<PlayerCountState>(() =>
-    hasInjected
-      ? { status: "ok", count: injected!.players as number }
-      : { status: "loading" }
-  );
+  const [state, setState] = useState<PlayerCountState>(() => {
+    if (isDevInjection) {
+      return injected!.online && typeof injected!.players === "number"
+        ? { status: "ok", count: injected!.players as number }
+        : { status: "error" };
+    }
+    return { status: "loading" };
+  });
 
   useEffect(() => {
-    // Dev: data was injected into the HTML — no fetch needed
-    if (hasInjected) return;
+    // Dev: fresh data came from the HTML — nothing to do
+    if (isDevInjection) return;
 
     // Production: fetch from the API server
     let cancelled = false;
