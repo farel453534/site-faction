@@ -67,11 +67,8 @@ const TICKET_CATALOG = [
   {
     section: "Administration",
     types: [
-      { key: "naissance-rp",  label: "Naissance RP",      description: "Demander une naissance RP pour un personnage",               Icon: Baby          },
-      { key: "desertion",     label: "Désertion",          description: "Demander une désertion pour un personnage",                   Icon: Home          },
-      { key: "mort-rp",       label: "Mort RP",            description: "Demander une mort RP pour un personnage ciblé",              Icon: Skull         },
-      { key: "vol",           label: "Vol",                description: "Demander une autorisation de vol en jeu",                    Icon: Package       },
-      { key: "traitrise",     label: "Traîtrise",          description: "Demander une autorisation de traîtrise envers votre village", Icon: Star          },
+      { key: "naissance-rp",  label: "Naissance RP",      description: "Demander une naissance RP pour un personnage",                Icon: Baby          },
+      { key: "traitrise",     label: "Traîtrise",          description: "Demander une autorisation de traîtrise envers votre faction",  Icon: Star          },
       { key: "ck",            label: "Demande de CK",      description: "Demander un Character Kill pour un personnage ciblé",        Icon: Swords        },
       { key: "don",           label: "Demande de Don",     description: "Faire une demande de don en jeu",                            Icon: Gift          },
       { key: "classe",        label: "Demande de Classe",  description: "Demander un changement ou une attribution de classe",        Icon: GraduationCap },
