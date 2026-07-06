@@ -55,7 +55,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { query, setQuery } = useSearch();
   const { data: content } = useContent();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const ruleGroups = content?.groups ?? [];
   const mainRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -95,11 +95,65 @@ export default function Layout({ children }: { children: ReactNode }) {
   }, []);
 
   const q = query.trim().toLowerCase();
+
+  type SearchItem = {
+    key: string;
+    title: string;
+    subtitle: string;
+    href: string;
+    external?: boolean;
+  };
+
+  const allSearchItems = useMemo<SearchItem[]>(() => {
+    const items: SearchItem[] = [];
+
+    // Pages de règles
+    for (const g of ruleGroups) {
+      for (const p of g.pages) {
+        items.push({
+          key: `rule:${g.slug}/${p.slug}`,
+          title: p.title,
+          subtitle: g.title,
+          href: `/${g.slug}/${p.slug}`,
+        });
+      }
+    }
+
+    // Navigation principale (toujours visible)
+    items.push({ key: "nav:accueil", title: "Accueil", subtitle: "Navigation", href: "/" });
+    items.push({ key: "nav:reglement", title: "Règlement", subtitle: "Navigation", href: "/reglement" });
+    items.push({ key: "nav:wiki", title: "Wiki", subtitle: "Lien externe", href: WIKI_BASE, external: true });
+
+    // Pages liées au compte
+    if (user) {
+      items.push({ key: "nav:profil", title: "Mon profil", subtitle: "Mon compte", href: "/profil" });
+      items.push({ key: "nav:tickets", title: "Tickets", subtitle: "Mon compte", href: "/tickets" });
+    }
+    if (user && user.gerantFactions.length > 0) {
+      items.push({ key: "nav:gerant", title: "Gérer ma faction", subtitle: "Mon compte", href: "/gerant" });
+    }
+    if (isAdmin) {
+      items.push({ key: "nav:admin", title: "Administration", subtitle: "Mon compte", href: "/admin" });
+    }
+
+    // Lores
+    for (const lore of LORES) {
+      items.push({
+        key: `lore:${lore.slug}`,
+        title: `Lore ${lore.label}`,
+        subtitle: "Lores — Factions",
+        href: `${WIKI_BASE}/lore-faction/${lore.slug}`,
+        external: true,
+      });
+    }
+
+    return items;
+  }, [ruleGroups, user, isAdmin]);
+
   const searchResults = q
-    ? ruleGroups.flatMap((g) =>
-        g.pages
-          .filter((p) => p.title.toLowerCase().includes(q))
-          .map((p) => ({ group: g, page: p })),
+    ? allSearchItems.filter((item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.subtitle.toLowerCase().includes(q),
       )
     : [];
 
@@ -134,10 +188,10 @@ export default function Layout({ children }: { children: ReactNode }) {
             <Search className="absolute left-4 w-4 h-4 text-muted-foreground pointer-events-none" />
             <input
               type="search"
-              aria-label="Rechercher une règle"
+              aria-label="Rechercher"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher une règle…"
+              placeholder="Rechercher…"
               className="w-full bg-white/[0.04] border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 focus:bg-white/[0.06] transition-colors"
             />
           </div>
@@ -145,22 +199,38 @@ export default function Layout({ children }: { children: ReactNode }) {
             <div className="absolute top-full mt-2 left-0 right-0 bg-popover border border-popover-border rounded-xl shadow-2xl shadow-black/60 overflow-hidden z-40 max-h-80 overflow-y-auto">
               {searchResults.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
-                  Aucune page ne correspond.
+                  Aucun résultat pour « {query} ».
                 </p>
               ) : (
-                searchResults.map(({ group, page }) => (
-                  <Link
-                    key={`${group.slug}/${page.slug}`}
-                    href={`/${group.slug}/${page.slug}`}
-                    onClick={() => setQuery("")}
-                    className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors"
-                  >
-                    <span className="text-foreground">{page.title}</span>
-                    <span className="text-[0.68rem] uppercase tracking-wider text-muted-foreground">
-                      {group.title}
-                    </span>
-                  </Link>
-                ))
+                searchResults.map((item) =>
+                  item.external ? (
+                    <a
+                      key={item.key}
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setQuery("")}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors"
+                    >
+                      <span className="text-foreground">{item.title}</span>
+                      <span className="text-[0.68rem] uppercase tracking-wider text-muted-foreground">
+                        {item.subtitle}
+                      </span>
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      onClick={() => setQuery("")}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors"
+                    >
+                      <span className="text-foreground">{item.title}</span>
+                      <span className="text-[0.68rem] uppercase tracking-wider text-muted-foreground">
+                        {item.subtitle}
+                      </span>
+                    </Link>
+                  )
+                )
               )}
             </div>
           )}
