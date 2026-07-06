@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   KeyRound,
   Ticket,
+  ScrollText,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -43,6 +44,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { query, setQuery } = useSearch();
   const { data: content } = useContent();
+  const { user } = useAuth();
   const ruleGroups = content?.groups ?? [];
   const mainRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -192,14 +194,16 @@ export default function Layout({ children }: { children: ReactNode }) {
           ref={railRef}
           className="w-16 shrink-0 flex flex-col items-center gap-2 py-5 border-r border-white/5 z-30"
         >
+          {/* Règlement — tout en haut */}
           <RailButton
             as="link"
             href="/"
-            icon={House}
-            label="Accueil"
+            icon={ScrollText}
+            label="Règlement"
             active={isHome}
           />
           <div className="h-px w-7 bg-white/10 my-1" />
+          {/* Groupes de règles */}
           {ruleGroups.map((group) => {
             const Icon = groupIcons[group.slug] ?? BookOpen;
             const active = currentGroupSlug === group.slug;
@@ -214,6 +218,26 @@ export default function Layout({ children }: { children: ReactNode }) {
               />
             );
           })}
+          {/* Raccourcis compte — visibles uniquement si connecté */}
+          {user && (
+            <>
+              <div className="h-px w-7 bg-white/10 my-1 mt-auto" />
+              <RailButton
+                as="link"
+                href="/profil"
+                icon={User}
+                label="Mon profil"
+                active={location === "/profil"}
+              />
+              <RailButton
+                as="link"
+                href="/tickets"
+                icon={Ticket}
+                label="Tickets"
+                active={location === "/tickets"}
+              />
+            </>
+          )}
         </div>
 
         {/* Flyout panel */}
