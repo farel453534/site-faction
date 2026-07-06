@@ -15,6 +15,8 @@ export interface SessionUser {
   isGeneralStaff: boolean;
   /** All factions this user manages as gérant (a user can hold several gérant roles). */
   gerantFactions: string[];
+  /** Discord OAuth2 refresh token — used to re-fetch roles without a full re-login. */
+  discordRefreshToken?: string;
 }
 
 export interface AuthedRequest extends Request {

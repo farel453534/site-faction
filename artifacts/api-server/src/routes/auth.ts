@@ -4,6 +4,7 @@ import {
   buildAuthorizeUrl,
   buildAvatarUrl,
   exchangeCode,
+  refreshDiscordToken,
   fetchDiscordUser,
   fetchDiscordGuildMember,
   detectFaction,
@@ -73,7 +74,7 @@ router.get("/auth/discord/callback", async (req, res) => {
   }
 
   try {
-    const accessToken = await exchangeCode({
+    const { accessToken, refreshToken } = await exchangeCode({
       code,
       redirectUri: getRedirectUri(req),
     });
@@ -112,6 +113,7 @@ router.get("/auth/discord/callback", async (req, res) => {
       isResponsable,
       isGeneralStaff: generalStaff,
       gerantFactions,
+      discordRefreshToken: refreshToken,
     };
     res.cookie(SESSION_COOKIE, JSON.stringify(session), {
       httpOnly: true,
@@ -155,6 +157,78 @@ router.get("/auth/me", async (req, res) => {
     },
     isAdmin: await isAdmin(user.id),
   });
+});
+
+/**
+ * POST /api/auth/refresh
+ * Re-fetches the user's Discord guild roles using the stored refresh token
+ * and rewrites the session cookie with up-to-date data — no re-login needed.
+ */
+router.post("/auth/refresh", async (req, res) => {
+  const current = readSession(req);
+  if (!current) {
+    return res.status(401).json({ ok: false, error: "not_authenticated" });
+  }
+  if (!current.discordRefreshToken) {
+    // Old session (pre-refresh-token) — tell the client to do a full re-login
+    return res.status(200).json({ ok: false, error: "no_refresh_token" });
+  }
+
+  try {
+    const { accessToken, refreshToken: newRefreshToken } = await refreshDiscordToken(
+      current.discordRefreshToken,
+    );
+
+    const [user, guildMember] = await Promise.all([
+      fetchDiscordUser(accessToken),
+      fetchDiscordGuildMember(
+        accessToken,
+        process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404",
+      ),
+    ]);
+
+    if (!guildMember) {
+      // User left the Discord server — kill the session
+      res.clearCookie(SESSION_COOKIE, { path: "/" });
+      return res.status(200).json({ ok: false, error: "not_member" });
+    }
+
+    const roles = guildMember.roles ?? [];
+    const faction = detectFaction(roles);
+    const userId = (user as DiscordUser).id;
+    const isResponsable = userId === RESPONSABLE_ID;
+    const gerantFactions = isResponsable
+      ? FACTION_ROLES.map((f) => f.name)
+      : detectGerantFactions(roles);
+    const generalStaff = isResponsable ? false : await isGeneralStaff(userId);
+
+    const updated: SessionUser = {
+      id: userId,
+      username: (user as DiscordUser).username,
+      global_name: (user as DiscordUser).global_name ?? null,
+      avatar: (user as DiscordUser).avatar ?? null,
+      faction,
+      grade: detectGrade(faction, roles),
+      isResponsable,
+      isGeneralStaff: generalStaff,
+      gerantFactions,
+      discordRefreshToken: newRefreshToken,
+    };
+
+    res.cookie(SESSION_COOKIE, JSON.stringify(updated), {
+      httpOnly: true,
+      secure: true,
+      sameSite,
+      signed: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.warn({ err }, "Session refresh failed");
+    return res.status(200).json({ ok: false, error: "refresh_failed" });
+  }
 });
 
 router.post("/auth/logout", (_req, res) => {

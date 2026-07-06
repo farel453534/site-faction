@@ -201,7 +201,7 @@ export function buildAuthorizeUrl(params: {
 export async function exchangeCode(params: {
   code: string;
   redirectUri: string;
-}): Promise<string> {
+}): Promise<{ accessToken: string; refreshToken: string }> {
   const body = new URLSearchParams({
     client_id: getClientId(),
     client_secret: getClientSecret(),
@@ -221,8 +221,33 @@ export async function exchangeCode(params: {
     throw new Error(`Discord token exchange failed: ${resp.status} ${text}`);
   }
 
-  const json = (await resp.json()) as { access_token: string };
-  return json.access_token;
+  const json = (await resp.json()) as { access_token: string; refresh_token: string };
+  return { accessToken: json.access_token, refreshToken: json.refresh_token };
+}
+
+export async function refreshDiscordToken(
+  refreshToken: string,
+): Promise<{ accessToken: string; refreshToken: string }> {
+  const body = new URLSearchParams({
+    client_id: getClientId(),
+    client_secret: getClientSecret(),
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+
+  const resp = await fetch(`${DISCORD_API}/oauth2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Discord token refresh failed: ${resp.status} ${text}`);
+  }
+
+  const json = (await resp.json()) as { access_token: string; refresh_token: string };
+  return { accessToken: json.access_token, refreshToken: json.refresh_token };
 }
 
 export async function fetchDiscordUser(accessToken: string): Promise<DiscordUser> {

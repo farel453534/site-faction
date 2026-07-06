@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 const API_BASE = (import.meta.env["VITE_API_URL"] ?? "").replace(/\/$/, "");
 
@@ -23,8 +24,30 @@ interface MeResponse {
   isAdmin?: boolean;
 }
 
+// Silently refresh Discord roles then invalidate the auth query so UI updates
+async function silentRefresh(
+  queryClient: ReturnType<typeof useQueryClient>,
+  apiBase: string,
+): Promise<void> {
+  try {
+    const res = await fetch(`${apiBase}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as { ok: boolean; error?: string };
+    if (data.ok) {
+      // Cookie was updated — re-fetch /me so React state reflects new roles
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    }
+  } catch {
+    // Silently ignore network errors (offline, server down…)
+  }
+}
+
 export function useAuth() {
   const queryClient = useQueryClient();
+  const lastRefreshRef = useRef<number>(0);
 
   const query = useQuery<MeResponse>({
     queryKey: ["auth", "me"],
@@ -39,6 +62,20 @@ export function useAuth() {
     staleTime: 60_000,
     retry: false,
   });
+
+  // Auto-refresh roles when the tab regains focus (throttled to once per 5 min)
+  useEffect(() => {
+    const THROTTLE_MS = 5 * 60 * 1000;
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRefreshRef.current < THROTTLE_MS) return;
+      lastRefreshRef.current = now;
+      void silentRefresh(queryClient, API_BASE);
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [queryClient]);
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
