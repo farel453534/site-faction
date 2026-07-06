@@ -17,6 +17,7 @@ import {
   Ticket,
   ScrollText,
   BookMarked,
+  Library,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -26,6 +27,15 @@ import { useContent } from "@/lib/use-content";
 
 const DISCORD_INVITE = "https://discord.gg/TaqPhgNeM4";
 const SHOP_URL = "https://mssclick.tebex.io/category/grades";
+const WIKI_BASE = "https://mssclick-poudlard.gitbook.io/wiki";
+
+const LORES = [
+  { label: "Auror", slug: "auror" },
+  { label: "Mangemort", slug: "mangemort" },
+  { label: "Vampire", slug: "vampire" },
+  { label: "Ministère", slug: "ministere" },
+  { label: "Lycanthrope", slug: "lycanthrope" },
+];
 
 const groupIcons: Record<string, typeof House> = {
   "notions-de-bases": BookOpen,
@@ -227,6 +237,14 @@ export default function Layout({ children }: { children: ReactNode }) {
             icon={BookMarked}
             label="Wiki"
           />
+          {/* Lores */}
+          <RailButton
+            as="button"
+            icon={Library}
+            label="Lores"
+            active={openFlyout === "lore"}
+            onClick={() => setOpenFlyout(openFlyout === "lore" ? null : "lore")}
+          />
           <div className="h-px w-7 bg-white/10 my-1" />
           {/* Groupes de règles */}
           {ruleGroups.map((group) => {
@@ -278,7 +296,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           )}
         </div>
 
-        {/* Flyout panel */}
+        {/* Flyout panel — groupes de règles */}
         {flyoutGroup && (
           <div
             ref={flyoutRef}
@@ -309,6 +327,36 @@ export default function Layout({ children }: { children: ReactNode }) {
                     </Link>
                   );
                 })}
+              </nav>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* Flyout panel — Lores */}
+        {openFlyout === "lore" && (
+          <div
+            ref={flyoutRef}
+            className="absolute left-16 top-0 bottom-0 w-64 bg-popover/95 backdrop-blur-md border-r border-white/10 z-20 animate-in slide-in-from-left-2 fade-in duration-200"
+          >
+            <div className="px-5 pt-5 pb-3">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-primary">
+                Lores — Factions
+              </p>
+            </div>
+            <ScrollArea className="h-[calc(100%-3.5rem)]">
+              <nav className="px-3 pb-6 space-y-0.5">
+                {LORES.map((lore) => (
+                  <a
+                    key={lore.slug}
+                    href={`${WIKI_BASE}/lore-faction/${lore.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                  >
+                    <span>{lore.label}</span>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+                  </a>
+                ))}
               </nav>
             </ScrollArea>
           </div>
