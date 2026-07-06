@@ -17,7 +17,7 @@ import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
 import { isAdmin } from "../lib/admin";
 import { isGeneralStaff } from "../lib/general-staff";
 import { getBaseUrl } from "../lib/request-url";
-import { upsertUserProfile } from "../lib/user-profiles";
+import { upsertUserProfile, touchLastSeen } from "../lib/user-profiles";
 
 const router: IRouter = Router();
 
@@ -139,6 +139,7 @@ router.get("/auth/me", async (req, res) => {
   if (!user) {
     return res.status(401).json({ authenticated: false });
   }
+  void touchLastSeen(user.id);
   return res.json({
     authenticated: true,
     user: {

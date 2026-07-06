@@ -24,6 +24,23 @@ function isMissingColumnError(err: unknown): boolean {
 }
 
 /**
+ * Update lastSeenAt for a user on every authenticated page load.
+ * Fire-and-forget — never blocks the response.
+ */
+export async function touchLastSeen(discordId: string): Promise<void> {
+  const db = getAppDb();
+  if (!db) return;
+  try {
+    await db
+      .update(userProfilesTable)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(userProfilesTable.discordId, discordId));
+  } catch {
+    // non-blocking
+  }
+}
+
+/**
  * Upsert a user profile row on every successful Discord login.
  * Silently swallows errors so a DB issue never breaks auth.
  * @param lastIp - IP address of the user at login time (stored for responsable visibility only).
