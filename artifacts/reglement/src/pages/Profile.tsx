@@ -11,6 +11,10 @@ import {
   Gamepad2,
   Check,
   Loader2,
+  User,
+  KeyRound,
+  Ticket,
+  ShieldCheck,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import {
@@ -272,7 +276,7 @@ function SteamIdSection({ userId: _userId }: { userId: string }) {
 }
 
 export default function Profile() {
-  const { user, isLoading: authLoading, login } = useAuth();
+  const { user, isAdmin, isLoading: authLoading, login } = useAuth();
   const stats = usePlayerStats(!!user);
 
   if (authLoading) {
@@ -318,6 +322,44 @@ export default function Profile() {
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Accueil</span>
       </Link>
+
+      {/* Barre de navigation contextuelle */}
+      <nav className="flex items-center gap-1 mb-8 p-1 rounded-2xl bg-white/[0.04] border border-white/8 w-fit">
+        <Link
+          href="/profil"
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-primary/15 text-primary border border-primary/20 transition-colors"
+        >
+          <User className="w-3.5 h-3.5" />
+          Mon profil
+        </Link>
+        {user.gerantFactions.length > 0 && (
+          <Link
+            href="/gerant"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            {user.gerantFactions.length === 1
+              ? `Ma faction`
+              : `Mes factions`}
+          </Link>
+        )}
+        <Link
+          href="/tickets"
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+        >
+          <Ticket className="w-3.5 h-3.5" />
+          Tickets
+        </Link>
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Administration
+          </Link>
+        )}
+      </nav>
 
       <header className="flex items-center gap-4 mb-10">
         {user.avatarUrl ? (
