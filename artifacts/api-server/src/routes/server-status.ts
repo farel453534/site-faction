@@ -5,13 +5,10 @@ const router = Router();
 
 const GMD_HOST = "51.91.215.65";
 const GMD_PORT = 27015;
-const QUERY_TIMEOUT = 4000;
 
-// Source Engine A2S_INFO query
-const A2S_INFO_REQUEST = Buffer.from([
-  0xff, 0xff, 0xff, 0xff, // header
-  0x54,                   // A2S_INFO
-  // "Source Engine Query\0"
+const A2S_HEADER = Buffer.from([0xff, 0xff, 0xff, 0xff]);
+const A2S_INFO_PAYLOAD = Buffer.from([
+  0x54,
   0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6e, 0x67,
   0x69, 0x6e, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00,
 ]);
@@ -25,40 +22,41 @@ function readNullString(buf: Buffer, offset: number): { value: string; offset: n
 function querySourceServer(): Promise<{ players: number; maxPlayers: number; name: string; map: string }> {
   return new Promise((resolve, reject) => {
     const socket = dgram.createSocket("udp4");
+    let challenged = false;
+
     const timer = setTimeout(() => {
       socket.close();
       reject(new Error("timeout"));
-    }, QUERY_TIMEOUT);
+    }, 5000);
+
+    const parseInfo = (msg: Buffer) => {
+      if (msg.length < 9 || msg[4] !== 0x49) { reject(new Error("bad response")); return; }
+      let off = 6;
+      const name   = readNullString(msg, off); off = name.offset;
+      const map    = readNullString(msg, off); off = map.offset;
+      const folder = readNullString(msg, off); off = folder.offset;
+      const game   = readNullString(msg, off); off = game.offset;
+      off += 2;
+      const players    = msg[off]     ?? 0;
+      const maxPlayers = msg[off + 1] ?? 0;
+      resolve({ players, maxPlayers, name: name.value, map: map.value });
+    };
 
     socket.on("message", (msg) => {
-      clearTimeout(timer);
-      socket.close();
-      try {
-        // msg: FF FF FF FF 49 <protocol> <name\0> <map\0> <folder\0> <game\0> <appid:2> <players:1> <maxPlayers:1> ...
-        if (msg.length < 6 || msg[4] !== 0x49) {
-          // Might be a challenge (0x41) — re-send with challenge bytes
-          if (msg[4] === 0x41 && msg.length >= 9) {
-            reject(new Error("challenge required"));
-          } else {
-            reject(new Error("unexpected response type"));
-          }
-          return;
-        }
-        let offset = 6; // skip header (4) + type (1) + protocol (1)
-        const name = readNullString(msg, offset);
-        offset = name.offset;
-        const map = readNullString(msg, offset);
-        offset = map.offset;
-        const folder = readNullString(msg, offset);
-        offset = folder.offset;
-        const game = readNullString(msg, offset);
-        offset = game.offset;
-        offset += 2; // app_id (short)
-        const players = msg[offset] ?? 0;
-        const maxPlayers = msg[offset + 1] ?? 0;
-        resolve({ players, maxPlayers, name: name.value, map: map.value });
-      } catch (e) {
-        reject(e);
+      if (msg[4] === 0x41 && !challenged) {
+        // Challenge response — resend with the 4 challenge bytes appended
+        challenged = true;
+        const challenge = msg.slice(5, 9);
+        const req = Buffer.concat([A2S_HEADER, A2S_INFO_PAYLOAD, challenge]);
+        socket.send(req, 0, req.length, GMD_PORT, GMD_HOST);
+      } else if (msg[4] === 0x49) {
+        clearTimeout(timer);
+        socket.close();
+        parseInfo(msg);
+      } else {
+        clearTimeout(timer);
+        socket.close();
+        reject(new Error(`unexpected type 0x${msg[4]?.toString(16)}`));
       }
     });
 
@@ -68,7 +66,8 @@ function querySourceServer(): Promise<{ players: number; maxPlayers: number; nam
       reject(err);
     });
 
-    socket.send(A2S_INFO_REQUEST, 0, A2S_INFO_REQUEST.length, GMD_PORT, GMD_HOST);
+    const req = Buffer.concat([A2S_HEADER, A2S_INFO_PAYLOAD]);
+    socket.send(req, 0, req.length, GMD_PORT, GMD_HOST);
   });
 }
 
