@@ -171,10 +171,10 @@ export default function Layout({ children }: { children: ReactNode }) {
             className="w-[54px] h-[54px] object-contain"
           />
           <div className="hidden lg:block leading-tight">
-            <div className="font-serif font-extrabold text-foreground text-[1.15rem] tracking-tight">
+            <div className="font-serif font-extrabold text-foreground text-[1.45rem] tracking-tight uppercase">
               MSSClick
             </div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-primary">
+            <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-primary">
               Faction
             </div>
           </div>
