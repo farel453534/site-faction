@@ -27,34 +27,43 @@ type PlayerCountState =
   | { status: "ok"; count: number }
   | { status: "error" };
 
+type GmodPayload = { online: boolean; players: number | null };
+
+function applyPayload(payload: GmodPayload, setState: (s: PlayerCountState) => void) {
+  if (payload.online && typeof payload.players === "number") {
+    setState({ status: "ok", count: payload.players });
+  } else {
+    setState({ status: "error" });
+  }
+}
+
 function useServerPlayerCount(): PlayerCountState {
   const [state, setState] = useState<PlayerCountState>({ status: "loading" });
 
   useEffect(() => {
-    // Dev: fetch from the Vite middleware endpoint (no API server needed)
-    // Prod: fetch from the Express API server
-    const url = import.meta.env.DEV ? "/_gmod" : "/api/server-status";
-    let cancelled = false;
+    // Dev: use the Vite HMR WebSocket (already connected — no new network channel needed)
+    if (import.meta.hot) {
+      import.meta.hot.on("gmod-status", (data: GmodPayload) => applyPayload(data, setState));
+      // Ask the server for the current cached value immediately
+      import.meta.hot.send("gmod-status-request", {});
+      return () => { import.meta.hot?.off("gmod-status", () => {}); };
+    }
 
+    // Prod: fetch from the Express API server, refresh every 30 s
+    let cancelled = false;
     async function poll() {
       try {
-        const res = await fetch(url, {
+        const res = await fetch("/api/server-status", {
           signal: AbortSignal.timeout(8000),
           cache: "no-store",
         });
         if (!res.ok) throw new Error("non-ok");
-        const data = (await res.json()) as { online: boolean; players: number | null };
-        if (cancelled) return;
-        if (data?.online && typeof data.players === "number") {
-          setState({ status: "ok", count: data.players });
-        } else {
-          setState({ status: "error" });
-        }
+        const data = (await res.json()) as GmodPayload;
+        if (!cancelled) applyPayload(data, setState);
       } catch {
         if (!cancelled) setState({ status: "error" });
       }
     }
-
     poll();
     const id = setInterval(poll, 30_000);
     return () => { cancelled = true; clearInterval(id); };

@@ -104,21 +104,21 @@ function serverStatusPlugin(): Plugin {
     name: "server-status",
     apply: "serve", // dev server only — never runs during production build
     configureServer(server) {
-      // Poll immediately so the first request already has data
+      // Poll immediately so data is ready before the first browser request
       currentPoll = pollOnce();
-      const interval = setInterval(() => { currentPoll = pollOnce(); }, 30_000);
+      const interval = setInterval(() => {
+        currentPoll = pollOnce().then(() => {
+          // Push updated status to all connected browsers
+          server.ws.send({ type: "custom", event: "gmod-status", data: cachedStatus });
+        });
+      }, 30_000);
       server.httpServer?.on("close", () => clearInterval(interval));
 
-      // Expose a plain JSON endpoint the React component can fetch
-      server.middlewares.use(
-        "/_gmod",
-        async (_req: IncomingMessage, res: ServerResponse) => {
-          await currentPoll; // wait for first poll if still in progress
-          res.setHeader("Content-Type", "application/json");
-          res.setHeader("Cache-Control", "no-store");
-          res.end(JSON.stringify(cachedStatus));
-        },
-      );
+      // Browser sends "gmod-status-request" → server replies with current cached value
+      server.ws.on("gmod-status-request", async () => {
+        await currentPoll;
+        server.ws.send({ type: "custom", event: "gmod-status", data: cachedStatus });
+      });
     },
   };
 }
