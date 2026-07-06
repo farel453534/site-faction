@@ -15,7 +15,11 @@ import {
 import { useContent } from "@/lib/use-content";
 import { useAuth } from "@/lib/use-auth";
 
-const SERVER_STATUS_URL = "/vite-server-status";
+declare global {
+  interface Window {
+    __GMOD_STATUS__?: { online: boolean; players: number | null; maxPlayers: number | null };
+  }
+}
 
 const groupIcons: Record<string, typeof BookOpen> = {
   "notions-de-bases": BookOpen,
@@ -30,37 +34,12 @@ type PlayerCountState =
   | { status: "error" };
 
 function useServerPlayerCount(): PlayerCountState {
-  const [state, setState] = useState<PlayerCountState>({ status: "loading" });
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetch_() {
-      try {
-        const res = await fetch(SERVER_STATUS_URL, {
-          signal: AbortSignal.timeout(8000),
-          cache: "no-store",
-        });
-        const data = (await res.json()) as {
-          online: boolean;
-          players: number | null;
-        };
-        if (cancelled) return;
-        if (data?.online && typeof data.players === "number") {
-          setState({ status: "ok", count: data.players });
-        } else {
-          setState({ status: "error" });
-        }
-      } catch {
-        if (!cancelled) setState({ status: "error" });
-      }
-    }
-    fetch_();
-    const id = setInterval(fetch_, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
+  const [state, setState] = useState<PlayerCountState>(() => {
+    const s = window.__GMOD_STATUS__;
+    if (!s) return { status: "loading" };
+    if (s.online && typeof s.players === "number") return { status: "ok", count: s.players };
+    return { status: "error" };
+  });
 
   return state;
 }

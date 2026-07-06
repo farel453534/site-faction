@@ -99,21 +99,22 @@ async function pollOnce() {
 function serverStatusPlugin(): Plugin {
   return {
     name: "server-status",
+    // Inject cached status directly into every HTML response — no browser fetch needed
+    transformIndexHtml() {
+      return [
+        {
+          tag: "script",
+          attrs: { type: "text/javascript" },
+          children: `window.__GMOD_STATUS__=${JSON.stringify(cachedStatus)};`,
+          injectTo: "head-prepend" as const,
+        },
+      ];
+    },
     configureServer(server) {
-      // Kick off polling immediately, then every 30s
+      // Poll immediately then every 30s so the cache stays fresh
       pollOnce();
       const interval = setInterval(pollOnce, 30_000);
-
-      // Clean up on server close
       server.httpServer?.on("close", () => clearInterval(interval));
-
-      // Middleware: catch the path manually so no connect prefix-match issues
-      server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
-        if (req.url !== "/vite-server-status") { next(); return; }
-        res.setHeader("Content-Type", "application/json");
-        res.setHeader("Cache-Control", "no-store");
-        res.end(JSON.stringify(cachedStatus));
-      });
     },
   };
 }
