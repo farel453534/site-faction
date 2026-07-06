@@ -16,6 +16,8 @@ export interface AuthUser {
   isGeneralStaff: boolean;
   /** All factions this user manages as gérant (a user can hold several gérant roles). */
   gerantFactions: string[];
+  /** False = not in the faction Discord server → can only open Naissance RP tickets. */
+  isGuildMember: boolean;
 }
 
 interface MeResponse {

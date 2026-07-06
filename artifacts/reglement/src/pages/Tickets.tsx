@@ -86,6 +86,7 @@ const ALL_CATEGORY_LABELS: Record<string, string> = {
 export default function Tickets() {
   const { user, isLoading: authLoading, login } = useAuth();
   const gerantFactions = user?.gerantFactions ?? [];
+  const isGuildMember = user?.isGuildMember ?? false;
   const search = useSearch();
   const [scope, setScope] = useState<Scope>("catalog");
   const [openTicketId, setOpenTicketId] = useState<number | null>(null);
@@ -245,13 +246,18 @@ export default function Tickets() {
       {/* Catalog view */}
       {scope === "catalog" && (
         <div className="space-y-10 animate-in fade-in duration-300">
+          {!isGuildMember && (
+            <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-5 py-3.5 text-sm text-amber-200/80">
+              Tu n'es pas encore sur le Discord faction — seule la demande de <span className="font-semibold text-amber-300">Naissance RP</span> est disponible pour l'instant.
+            </div>
+          )}
           {TICKET_CATALOG.map(({ section, types }) => (
             <div key={section}>
               <p className="text-[0.68rem] font-bold uppercase tracking-[0.25em] text-foreground/40 mb-4">
                 {section}
               </p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {types.map(({ key, label, description, Icon }) => (
+                {types.filter(({ key }) => isGuildMember || key === "naissance-rp").map(({ key, label, description, Icon }) => (
                   <div
                     key={key}
                     className="flex flex-col gap-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5 hover:border-primary/25 hover:bg-white/[0.05] transition-colors"
@@ -278,7 +284,7 @@ export default function Tickets() {
                     </button>
                   </div>
                 ))}
-                {user.faction && (
+                {user.faction && isGuildMember && (
                   <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5 hover:border-primary/25 hover:bg-white/[0.05] transition-colors">
                     <div className="flex items-start gap-3">
                       <span className="w-11 h-11 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">

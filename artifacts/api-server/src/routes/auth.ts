@@ -107,6 +107,7 @@ router.get("/auth/discord/callback", async (req, res) => {
       isResponsable,
       isGeneralStaff: generalStaff,
       gerantFactions,
+      isGuildMember: !!guildMember,
       discordRefreshToken: refreshToken,
     };
     res.cookie(SESSION_COOKIE, JSON.stringify(session), {
@@ -148,6 +149,7 @@ router.get("/auth/me", async (req, res) => {
       isResponsable: user.isResponsable ?? false,
       isGeneralStaff: user.isGeneralStaff ?? false,
       gerantFactions: user.gerantFactions ?? [],
+      isGuildMember: user.isGuildMember ?? false,
     },
     isAdmin: await isAdmin(user.id),
   });
@@ -200,6 +202,7 @@ router.post("/auth/refresh", async (req, res) => {
       isResponsable,
       isGeneralStaff: generalStaff,
       gerantFactions,
+      isGuildMember: !!guildMember,
       discordRefreshToken: newRefreshToken,
     };
 
