@@ -29,9 +29,9 @@ type PlayerCountState =
 
 function readMetaStatus(): { online: boolean; players: number | null; dev?: true } | null {
   try {
-    const content = document.querySelector('meta[name="gmod-status"]')?.getAttribute("content");
-    if (!content) return null;
-    return JSON.parse(content) as { online: boolean; players: number | null; dev?: true };
+    const text = document.getElementById("__gmod_status__")?.textContent;
+    if (!text) return null;
+    return JSON.parse(text) as { online: boolean; players: number | null; dev?: true };
   } catch {
     return null;
   }

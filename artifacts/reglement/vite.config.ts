@@ -107,13 +107,11 @@ function serverStatusPlugin(): Plugin {
     async transformIndexHtml() {
       await currentPoll;
       return [
-        // meta tag: 100% bulletproof — no JS execution, no CSP, no sandbox issues
+        // JSON data island — same pattern as Next.js __NEXT_DATA__; no JS execution, no encoding issues
         {
-          tag: "meta",
-          attrs: {
-            name: "gmod-status",
-            content: JSON.stringify(cachedStatus),
-          },
+          tag: "script",
+          attrs: { type: "application/json", id: "__gmod_status__" },
+          children: JSON.stringify(cachedStatus),
           injectTo: "head-prepend" as const,
         },
       ];
