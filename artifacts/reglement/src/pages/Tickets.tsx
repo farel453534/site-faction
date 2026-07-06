@@ -277,30 +277,30 @@ export default function Tickets() {
                     </button>
                   </div>
                 ))}
-                {user.faction && (
-                  <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5 hover:border-primary/25 hover:bg-white/[0.05] transition-colors">
-                    <div className="flex items-start gap-3">
-                      <span className="w-11 h-11 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">
-                        <HelpCircle className="w-5 h-5 text-primary" />
-                      </span>
-                      <div className="min-w-0 pt-0.5">
-                        <p className="font-bold text-foreground leading-tight">
-                          Plaintes/Demandes à mon gérant
-                        </p>
-                        <p className="text-[0.78rem] text-foreground/50 mt-0.5 leading-snug">
-                          Soumettre une plainte ou demande aux gérants de {user.faction}
-                        </p>
-                      </div>
+                <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5 hover:border-primary/25 hover:bg-white/[0.05] transition-colors">
+                  <div className="flex items-start gap-3">
+                    <span className="w-11 h-11 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">
+                      <HelpCircle className="w-5 h-5 text-primary" />
+                    </span>
+                    <div className="min-w-0 pt-0.5">
+                      <p className="font-bold text-foreground leading-tight">
+                        Plaintes/Demandes à mon gérant
+                      </p>
+                      <p className="text-[0.78rem] text-foreground/50 mt-0.5 leading-snug">
+                        {user.faction
+                          ? `Soumettre une plainte ou demande aux gérants de ${user.faction}`
+                          : "Soumettre une plainte ou demande à votre gérant de faction"}
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowCreate("question")}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.04] hover:border-primary/40 hover:bg-primary/10 hover:text-primary text-foreground/70 font-semibold px-4 py-2 text-sm transition-colors w-full"
-                    >
-                      Ouvrir un ticket
-                    </button>
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setShowCreate("question")}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.04] hover:border-primary/40 hover:bg-primary/10 hover:text-primary text-foreground/70 font-semibold px-4 py-2 text-sm transition-colors w-full"
+                  >
+                    Ouvrir un ticket
+                  </button>
+                </div>
               </div>
             </div>
           ))}
