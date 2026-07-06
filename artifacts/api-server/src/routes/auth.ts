@@ -87,13 +87,7 @@ router.get("/auth/discord/callback", async (req, res) => {
         process.env["DISCORD_GUILD_ID"] ?? "1062740125475426404",
       ),
     ]);
-    // Block users who are not members of the faction Discord server
-    if (!guildMember) {
-      req.log.warn({ userId: (user as DiscordUser).id }, "Login blocked: not a guild member");
-      return res.redirect(`${frontend}?login=not_member`);
-    }
-
-    const roles = guildMember.roles ?? [];
+    const roles = guildMember?.roles ?? [];
     const faction = detectFaction(roles);
     const userId = (user as DiscordUser).id;
     const isResponsable = userId === RESPONSABLE_ID;
@@ -187,13 +181,7 @@ router.post("/auth/refresh", async (req, res) => {
       ),
     ]);
 
-    if (!guildMember) {
-      // User left the Discord server — kill the session
-      res.clearCookie(SESSION_COOKIE, { path: "/" });
-      return res.status(200).json({ ok: false, error: "not_member" });
-    }
-
-    const roles = guildMember.roles ?? [];
+    const roles = guildMember?.roles ?? [];
     const faction = detectFaction(roles);
     const userId = (user as DiscordUser).id;
     const isResponsable = userId === RESPONSABLE_ID;
