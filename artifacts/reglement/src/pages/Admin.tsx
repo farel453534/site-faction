@@ -120,11 +120,11 @@ export default function Admin() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
       <Link
-        href="/"
+        href="/profil"
         className="flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors mb-6 w-fit"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Accueil</span>
+        <span>Mon profil</span>
       </Link>
 
       <header className="flex items-center gap-4 mb-6">
