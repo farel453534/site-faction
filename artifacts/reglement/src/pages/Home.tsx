@@ -15,7 +15,7 @@ import {
 import { useContent } from "@/lib/use-content";
 import { useAuth } from "@/lib/use-auth";
 
-const SERVER_IP = "51.91.215.65:27015";
+const SERVER_STATUS_URL = "/api/server-status";
 
 const groupIcons: Record<string, typeof BookOpen> = {
   "notions-de-bases": BookOpen,
@@ -31,17 +31,21 @@ function useServerPlayerCount() {
     let cancelled = false;
     async function fetch_() {
       try {
-        const res = await fetch(`http://${SERVER_IP}/players.json`, {
-          signal: AbortSignal.timeout(5000),
+        const res = await fetch(SERVER_STATUS_URL, {
+          signal: AbortSignal.timeout(8000),
         });
         const data = await res.json();
-        if (!cancelled) setCount(Array.isArray(data) ? data.length : null);
+        if (!cancelled) {
+          // Our proxy response: { online, players, maxPlayers }
+          const n = data?.online ? (data?.players ?? null) : null;
+          setCount(typeof n === "number" ? n : null);
+        }
       } catch {
         if (!cancelled) setCount(null);
       }
     }
     fetch_();
-    const id = setInterval(fetch_, 30_000);
+    const id = setInterval(fetch_, 60_000);
     return () => {
       cancelled = true;
       clearInterval(id);
@@ -142,7 +146,7 @@ export default function Home() {
             </div>
           </div>
           <a
-            href={`https://www.battlemetrics.com/servers/fivem?q=${SERVER_IP}`}
+            href="https://www.battlemetrics.com/servers/garrysmod?q=51.91.215.65%3A27015"
             target="_blank"
             rel="noreferrer"
             className="text-[0.72rem] text-primary/70 hover:text-primary transition-colors flex items-center gap-1"

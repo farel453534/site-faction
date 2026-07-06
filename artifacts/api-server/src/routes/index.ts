@@ -8,10 +8,12 @@ import gerantRouter from "./gerant";
 import blacklistRouter from "./blacklist";
 import ticketsRouter from "./tickets";
 import generalStaffRouter from "./general-staff";
+import serverStatusRouter from "./server-status";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(serverStatusRouter);
 router.use(authRouter);
 router.use(meRouter);
 router.use(adminRouter);
