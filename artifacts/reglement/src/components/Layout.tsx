@@ -9,6 +9,7 @@ import {
   ShieldHalf,
   Sparkles,
   ChevronRight,
+  ChevronsRight,
   LogOut,
   User,
   ShieldCheck,
@@ -341,39 +342,44 @@ function AuthButton() {
     );
   }
 
+  const statusLabel = user.isResponsable
+    ? "Responsable"
+    : user.faction ?? "Whitelisté";
+
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 pl-1.5 pr-3 py-1.5 text-sm text-foreground hover:border-primary/50 transition-colors"
+        className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] px-3 py-2 hover:border-primary/40 hover:bg-white/[0.07] transition-colors"
       >
         <span className="relative shrink-0">
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
               alt=""
-              className="w-6 h-6 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10"
             />
           ) : (
-            <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
-              <FaDiscord className="w-3.5 h-3.5 text-primary" />
+            <span className="w-10 h-10 rounded-full bg-primary/15 ring-2 ring-white/10 flex items-center justify-center">
+              <FaDiscord className="w-5 h-5 text-primary" />
             </span>
           )}
           {ticketCount > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full bg-red-500 border border-background flex items-center justify-center text-[0.5rem] font-bold text-white leading-none px-0.5">
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-red-500 border border-background flex items-center justify-center text-[0.55rem] font-bold text-white leading-none px-1">
               {ticketCount > 9 ? "9+" : ticketCount}
             </span>
           )}
         </span>
-        <span className="hidden sm:inline max-w-[9rem] truncate">
-          {user.displayName}
+        <span className="hidden sm:flex flex-col items-start min-w-0">
+          <span className="text-sm font-bold text-foreground leading-tight max-w-[10rem] truncate">
+            {user.displayName}
+          </span>
+          <span className="text-[0.7rem] font-semibold text-primary leading-tight">
+            {statusLabel}
+          </span>
         </span>
-        <ChevronRight
-          className={`w-3.5 h-3.5 opacity-50 transition-transform ${
-            open ? "rotate-90" : ""
-          }`}
-        />
+        <ChevronsRight className="hidden sm:block w-4 h-4 text-foreground/30 shrink-0" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 w-44 bg-popover border border-popover-border rounded-xl shadow-2xl shadow-black/60 overflow-hidden z-40">
