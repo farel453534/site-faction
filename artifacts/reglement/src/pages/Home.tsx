@@ -15,12 +15,6 @@ import {
 import { useContent } from "@/lib/use-content";
 import { useAuth } from "@/lib/use-auth";
 
-declare global {
-  interface Window {
-    __GMOD_STATUS__?: { online: boolean; players: number | null; maxPlayers: number | null; dev?: true };
-  }
-}
-
 const groupIcons: Record<string, typeof BookOpen> = {
   "notions-de-bases": BookOpen,
   "notions-rpg": Sparkles,
@@ -33,25 +27,32 @@ type PlayerCountState =
   | { status: "ok"; count: number }
   | { status: "error" };
 
-function useServerPlayerCount(): PlayerCountState {
-  const injected = window.__GMOD_STATUS__;
-  // `dev: true` means the Vite plugin injected fresh data — no fetch needed
-  const isDevInjection = injected?.dev === true;
+function readMetaStatus(): { online: boolean; players: number | null; dev?: true } | null {
+  try {
+    const content = document.querySelector('meta[name="gmod-status"]')?.getAttribute("content");
+    if (!content) return null;
+    return JSON.parse(content) as { online: boolean; players: number | null; dev?: true };
+  } catch {
+    return null;
+  }
+}
 
-  const [state, setState] = useState<PlayerCountState>(() => {
-    if (isDevInjection) {
-      return injected!.online && typeof injected!.players === "number"
-        ? { status: "ok", count: injected!.players as number }
-        : { status: "error" };
-    }
-    return { status: "loading" };
-  });
+function useServerPlayerCount(): PlayerCountState {
+  const [state, setState] = useState<PlayerCountState>({ status: "loading" });
 
   useEffect(() => {
-    // Dev: fresh data came from the HTML — nothing to do
-    if (isDevInjection) return;
+    // 1. Try the meta tag injected by the Vite dev plugin
+    const meta = readMetaStatus();
+    if (meta?.dev === true) {
+      if (meta.online && typeof meta.players === "number") {
+        setState({ status: "ok", count: meta.players });
+      } else {
+        setState({ status: "error" });
+      }
+      return; // dev mode — no fetch needed
+    }
 
-    // Production: fetch from the API server
+    // 2. Production: fetch from the API server
     let cancelled = false;
     async function fetch_() {
       try {
@@ -73,7 +74,7 @@ function useServerPlayerCount(): PlayerCountState {
     fetch_();
     const id = setInterval(fetch_, 60_000);
     return () => { cancelled = true; clearInterval(id); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   return state;
 }

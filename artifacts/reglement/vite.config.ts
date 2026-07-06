@@ -107,10 +107,13 @@ function serverStatusPlugin(): Plugin {
     async transformIndexHtml() {
       await currentPoll;
       return [
+        // meta tag: 100% bulletproof — no JS execution, no CSP, no sandbox issues
         {
-          tag: "script",
-          attrs: { type: "text/javascript" },
-          children: `window.__GMOD_STATUS__=${JSON.stringify(cachedStatus)};`,
+          tag: "meta",
+          attrs: {
+            name: "gmod-status",
+            content: JSON.stringify(cachedStatus),
+          },
           injectTo: "head-prepend" as const,
         },
       ];
