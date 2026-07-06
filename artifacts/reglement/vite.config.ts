@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import type { Plugin } from "vite";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import dgram from "node:dgram";
 
 const rawPort = process.env.PORT;
 const port = rawPort ? Number(rawPort) : 3000;
@@ -13,12 +16,106 @@ if (rawPort && (Number.isNaN(port) || port <= 0)) {
 
 const basePath = process.env.BASE_PATH || "/";
 
+const GMD_HOST = "51.91.215.65";
+const GMD_PORT = 27015;
+
+// A2S_INFO initial request (server may reply with a challenge)
+const A2S_HEADER = Buffer.from([0xff, 0xff, 0xff, 0xff]);
+const A2S_INFO_PAYLOAD = Buffer.from([
+  0x54,
+  0x53,0x6f,0x75,0x72,0x63,0x65,0x20,0x45,0x6e,0x67,
+  0x69,0x6e,0x65,0x20,0x51,0x75,0x65,0x72,0x79,0x00,
+]);
+
+function readNullString(buf: Buffer, offset: number) {
+  const end = buf.indexOf(0x00, offset);
+  if (end === -1) return { value: "", offset: buf.length };
+  return { value: buf.toString("utf8", offset, end), offset: end + 1 };
+}
+
+function queryGmod(): Promise<{ online: true; players: number; maxPlayers: number; name: string; map: string }> {
+  return new Promise((resolve, reject) => {
+    const socket = dgram.createSocket("udp4");
+    let challenged = false;
+
+    const timer = setTimeout(() => {
+      socket.close();
+      reject(new Error("timeout"));
+    }, 5000);
+
+    const parseInfo = (msg: Buffer) => {
+      // msg: FF FF FF FF 49 <proto> <name\0> <map\0> <folder\0> <game\0> <appid:2> <players:1> <max:1>
+      if (msg.length < 9 || msg[4] !== 0x49) { reject(new Error("bad type")); return; }
+      let off = 6;
+      const name   = readNullString(msg, off); off = name.offset;
+      const map    = readNullString(msg, off); off = map.offset;
+      const folder = readNullString(msg, off); off = folder.offset;
+      const game   = readNullString(msg, off); off = game.offset;
+      off += 2; // appid short
+      const players    = msg[off]     ?? 0;
+      const maxPlayers = msg[off + 1] ?? 0;
+      resolve({ online: true, players, maxPlayers, name: name.value, map: map.value });
+    };
+
+    socket.on("message", (msg) => {
+      if (msg[4] === 0x41 && !challenged) {
+        // Challenge response — resend with the 4 challenge bytes appended
+        challenged = true;
+        const challenge = msg.slice(5, 9);
+        const req = Buffer.concat([A2S_HEADER, A2S_INFO_PAYLOAD, challenge]);
+        socket.send(req, 0, req.length, GMD_PORT, GMD_HOST);
+      } else if (msg[4] === 0x49) {
+        clearTimeout(timer);
+        socket.close();
+        parseInfo(msg);
+      } else {
+        clearTimeout(timer);
+        socket.close();
+        reject(new Error(`unexpected type 0x${msg[4]?.toString(16)}`));
+      }
+    });
+
+    socket.on("error", (err) => {
+      clearTimeout(timer);
+      socket.close();
+      reject(err);
+    });
+
+    // Initial send
+    const req = Buffer.concat([A2S_HEADER, A2S_INFO_PAYLOAD]);
+    socket.send(req, 0, req.length, GMD_PORT, GMD_HOST);
+  });
+}
+
+function serverStatusPlugin(): Plugin {
+  return {
+    name: "server-status",
+    configureServer(server) {
+      server.middlewares.use(
+        "/api/server-status",
+        async (_req: IncomingMessage, res: ServerResponse) => {
+          try {
+            const info = await queryGmod();
+            res.setHeader("Content-Type", "application/json");
+            res.setHeader("Cache-Control", "no-store");
+            res.end(JSON.stringify(info));
+          } catch {
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ online: false, players: null, maxPlayers: null }));
+          }
+        },
+      );
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    serverStatusPlugin(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
