@@ -24,8 +24,13 @@ const groupIcons: Record<string, typeof BookOpen> = {
   factions: ShieldHalf,
 };
 
-function useServerPlayerCount() {
-  const [count, setCount] = useState<number | null>(null);
+type PlayerCountState =
+  | { status: "loading" }
+  | { status: "ok"; count: number }
+  | { status: "error" };
+
+function useServerPlayerCount(): PlayerCountState {
+  const [state, setState] = useState<PlayerCountState>({ status: "loading" });
 
   useEffect(() => {
     let cancelled = false;
@@ -33,15 +38,20 @@ function useServerPlayerCount() {
       try {
         const res = await fetch(SERVER_STATUS_URL, {
           signal: AbortSignal.timeout(8000),
+          cache: "no-store",
         });
-        const data = await res.json();
-        if (!cancelled) {
-          // Our proxy response: { online, players, maxPlayers }
-          const n = data?.online ? (data?.players ?? null) : null;
-          setCount(typeof n === "number" ? n : null);
+        const data = (await res.json()) as {
+          online: boolean;
+          players: number | null;
+        };
+        if (cancelled) return;
+        if (data?.online && typeof data.players === "number") {
+          setState({ status: "ok", count: data.players });
+        } else {
+          setState({ status: "error" });
         }
       } catch {
-        if (!cancelled) setCount(null);
+        if (!cancelled) setState({ status: "error" });
       }
     }
     fetch_();
@@ -52,7 +62,7 @@ function useServerPlayerCount() {
     };
   }, []);
 
-  return count;
+  return state;
 }
 
 const TICKET_CARDS = [
@@ -79,7 +89,7 @@ const TICKET_CARDS = [
 export default function Home() {
   const { data: content } = useContent();
   const { user } = useAuth();
-  const playerCount = useServerPlayerCount();
+  const serverState = useServerPlayerCount();
 
   const groups = content?.groups ?? [];
 
@@ -126,33 +136,32 @@ export default function Home() {
         </div>
 
         {/* Stat card — Joueurs en ligne */}
-        <div className="w-64 shrink-0 rounded-2xl border border-white/[0.07] bg-white/[0.03] flex flex-col items-start justify-between p-6 gap-4">
+        <div className="w-64 shrink-0 rounded-2xl border border-white/[0.07] bg-white/[0.03] flex flex-col items-start justify-center p-6 gap-4">
           <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
             <Users className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <div className="text-[0.7rem] text-foreground/45 mb-0.5">
+            <div className="text-[0.7rem] text-foreground/45 mb-1">
               Joueurs en ligne
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-3xl font-extrabold font-serif text-foreground leading-none">
-                {playerCount === null ? "—" : playerCount}
-              </span>
-              <span
-                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                  playerCount !== null ? "bg-emerald-500" : "bg-white/20"
-                }`}
-              />
+              {serverState.status === "loading" ? (
+                <div className="h-8 w-16 rounded-md bg-white/[0.06] animate-pulse" />
+              ) : serverState.status === "ok" ? (
+                <>
+                  <span className="text-3xl font-extrabold font-serif text-foreground leading-none">
+                    {serverState.count}
+                  </span>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-emerald-500" />
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl font-extrabold font-serif text-foreground/30 leading-none">—</span>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-white/20" />
+                </>
+              )}
             </div>
           </div>
-          <a
-            href="https://www.battlemetrics.com/servers/garrysmod?q=51.91.215.65%3A27015"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[0.72rem] text-primary/70 hover:text-primary transition-colors flex items-center gap-1"
-          >
-            Voir le serveur <ChevronRight className="w-3 h-3" />
-          </a>
         </div>
       </div>
 
