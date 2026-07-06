@@ -165,13 +165,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       <header className="h-[68px] shrink-0 flex items-center gap-4 px-4 md:px-6 border-b border-white/5 z-30">
         {/* Emblem */}
         <Link href="/" className="flex items-center gap-3 shrink-0 group">
-          <div className="w-[54px] h-[54px] rounded-full overflow-hidden border border-primary/40 bg-primary/10 group-hover:border-primary/70 transition-colors">
-            <img
-              src={`${import.meta.env.BASE_URL}favicon.png`}
-              alt="MSSClick"
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <img
+            src={`${import.meta.env.BASE_URL}favicon.png`}
+            alt="MSSClick"
+            className="w-[54px] h-[54px] object-contain"
+          />
           <div className="hidden lg:block leading-tight">
             <div className="font-serif font-extrabold text-foreground text-[1.15rem] tracking-tight">
               MSSClick
