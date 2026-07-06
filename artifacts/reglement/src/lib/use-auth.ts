@@ -11,6 +11,8 @@ export interface AuthUser {
   /** Highest grade role held within `faction`, or null. */
   grade: string | null;
   isResponsable: boolean;
+  /** Whether this user is general staff (can manage general tickets). */
+  isGeneralStaff: boolean;
   /** All factions this user manages as gérant (a user can hold several gérant roles). */
   gerantFactions: string[];
 }
@@ -710,6 +712,74 @@ export function useUpdateSteamId() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["me", "profile"] });
+    },
+  });
+}
+
+export interface GeneralStaffEntry {
+  discordId: string;
+  label: string | null;
+  addedBy: string | null;
+  createdAt: string | null;
+}
+
+export function useGeneralStaff(enabled: boolean) {
+  return useQuery<GeneralStaffEntry[]>({
+    queryKey: ["general-staff"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/general-staff`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Impossible de charger le staff général");
+      const data = (await res.json()) as { staff: GeneralStaffEntry[] };
+      return data.staff;
+    },
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useAddGeneralStaff() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { discordId: string; label?: string }) => {
+      const res = await fetch(`${API_BASE}/api/general-staff`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        const msgs: Record<string, string> = {
+          invalid_id: "L'identifiant Discord doit contenir uniquement des chiffres (15 à 25).",
+          db_unavailable: "La base de données n'est pas configurée.",
+        };
+        throw new Error(msgs[data.error ?? ""] ?? "Une erreur est survenue.");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["general-staff"] });
+    },
+  });
+}
+
+export function useRemoveGeneralStaff() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (discordId: string) => {
+      const res = await fetch(
+        `${API_BASE}/api/general-staff/${encodeURIComponent(discordId)}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error((data.error ?? "Une erreur est survenue."));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["general-staff"] });
     },
   });
 }

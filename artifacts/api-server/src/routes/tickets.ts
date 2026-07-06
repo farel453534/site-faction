@@ -173,13 +173,20 @@ router.get("/tickets", requireAuth, async (req, res) => {
       return;
     }
     if (faction) {
-      if (!user.gerantFactions.includes(faction) && !user.isResponsable) {
-        res.status(403).json({ error: "not_gerant_of_faction" });
-        return;
-      }
-      if (!FACTION_NAMES.has(faction)) {
-        res.status(400).json({ error: "unknown_faction" });
-        return;
+      if (faction === "Général") {
+        if (!user.isResponsable && !user.isGeneralStaff) {
+          res.status(403).json({ error: "forbidden" });
+          return;
+        }
+      } else {
+        if (!user.gerantFactions.includes(faction) && !user.isResponsable) {
+          res.status(403).json({ error: "not_gerant_of_faction" });
+          return;
+        }
+        if (!FACTION_NAMES.has(faction)) {
+          res.status(400).json({ error: "unknown_faction" });
+          return;
+        }
       }
       const tickets = await listFactionTickets(faction);
       res.json({

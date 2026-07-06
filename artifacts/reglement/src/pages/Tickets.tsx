@@ -28,6 +28,8 @@ import {
   Unlock,
   AlertTriangle,
   Swords,
+  Users,
+  UserMinus,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import {
@@ -45,6 +47,9 @@ import {
   useReopenTicket,
   useAddTicketParticipant,
   useRemoveTicketParticipant,
+  useGeneralStaff,
+  useAddGeneralStaff,
+  useRemoveGeneralStaff,
   type TicketEntry,
   type TicketAttachment,
 } from "@/lib/use-auth";
@@ -61,7 +66,7 @@ const STATUS_COLORS: Record<TicketEntry["status"], string> = {
   closed: "bg-white/10 text-foreground/50 border-white/10",
 };
 
-type Scope = "catalog" | "mine" | "archives" | { faction: string };
+type Scope = "catalog" | "mine" | "archives" | "general" | { faction: string };
 
 const TICKET_CATALOG = [
   {
@@ -108,14 +113,19 @@ export default function Tickets() {
     }
   }, [search]);
 
+  const canSeeGeneral = !!(user?.isResponsable || user?.isGeneralStaff);
   const mine = useMyTickets(!!user && scope === "mine");
   const factionTickets = useFactionTickets(
     typeof scope === "object" ? scope.faction : null,
   );
+  const generalTickets = useFactionTickets(canSeeGeneral && scope === "general" ? "Général" : null);
   const archived = useArchivedTickets(!!user?.isResponsable && scope === "archives");
 
   const list =
-    scope === "mine" ? mine : scope === "archives" ? archived : factionTickets;
+    scope === "mine" ? mine
+    : scope === "archives" ? archived
+    : scope === "general" ? generalTickets
+    : factionTickets;
 
   if (authLoading) {
     return (
@@ -156,7 +166,9 @@ export default function Tickets() {
         ? "Mes tickets"
         : scope === "archives"
           ? "Archives"
-          : `Gestion · ${scope.faction}`;
+          : scope === "general"
+            ? "Gestion Générale"
+            : `Gestion · ${(scope as { faction: string }).faction}`;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
@@ -215,6 +227,19 @@ export default function Tickets() {
             Gestion · {f}
           </button>
         ))}
+        {canSeeGeneral && (
+          <button
+            type="button"
+            onClick={() => setScope("general")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              scope === "general"
+                ? "bg-primary/90 text-primary-foreground"
+                : "text-foreground/60 hover:text-foreground"
+            }`}
+          >
+            Gestion Générale
+          </button>
+        )}
         {user.isResponsable && (
           <button
             type="button"
@@ -272,7 +297,7 @@ export default function Tickets() {
         </div>
       )}
 
-      {/* Ticket list (Mes tickets / Gestion / Archives) */}
+      {/* Ticket list (Mes tickets / Gestion / Archives / Gestion Générale) */}
       {scope !== "catalog" && (
         <>
           {scope === "mine" && (
@@ -286,6 +311,10 @@ export default function Tickets() {
                 Nouveau ticket
               </button>
             </div>
+          )}
+
+          {scope === "general" && user.isResponsable && (
+            <GeneralStaffPanel />
           )}
 
           {list.isLoading && (
@@ -911,5 +940,126 @@ function ActionButton({
       {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : icon}
       {label}
     </button>
+  );
+}
+
+function GeneralStaffPanel() {
+  const staff = useGeneralStaff(true);
+  const addStaff = useAddGeneralStaff();
+  const removeStaff = useRemoveGeneralStaff();
+  const [newId, setNewId] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!/^\d{15,25}$/.test(newId.trim())) {
+      setError("L'ID Discord doit contenir uniquement des chiffres (15 à 25 caractères).");
+      return;
+    }
+    addStaff.mutate(
+      { discordId: newId.trim(), label: newLabel.trim() || undefined },
+      {
+        onSuccess: () => {
+          setNewId("");
+          setNewLabel("");
+          setShowForm(false);
+        },
+        onError: (err) => setError((err as Error).message),
+      },
+    );
+  };
+
+  return (
+    <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/[0.04] p-5">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-primary" />
+          <p className="text-sm font-bold text-foreground">Staff Général</p>
+          <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full bg-white/10 text-foreground/50 px-2 py-0.5">
+            {staff.data?.length ?? 0} membre{(staff.data?.length ?? 0) !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => { setShowForm((v) => !v); setError(null); }}
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary font-semibold px-3 py-1.5 text-xs transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Ajouter
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleAdd} className="mb-4 space-y-2">
+          <div className="flex gap-2 flex-wrap">
+            <input
+              type="text"
+              value={newId}
+              onChange={(e) => setNewId(e.target.value)}
+              placeholder="ID Discord (chiffres uniquement)"
+              className="flex-1 min-w-0 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
+            />
+            <input
+              type="text"
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              placeholder="Nom (optionnel)"
+              className="w-40 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={addStaff.isPending}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm transition-colors disabled:opacity-50"
+            >
+              {addStaff.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              Ajouter
+            </button>
+          </div>
+          {error && <p className="text-xs text-destructive px-1">{error}</p>}
+        </form>
+      )}
+
+      {staff.isLoading && (
+        <div className="h-10 rounded-xl bg-white/[0.04] animate-pulse" />
+      )}
+
+      {staff.data && staff.data.length === 0 && !showForm && (
+        <p className="text-xs text-foreground/40">
+          Aucun membre dans le staff général. Ajoutez des personnes pour qu'elles puissent gérer les demandes.
+        </p>
+      )}
+
+      {staff.data && staff.data.length > 0 && (
+        <ul className="space-y-1.5">
+          {staff.data.map((s) => (
+            <li
+              key={s.discordId}
+              className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {s.label ?? s.discordId}
+                </p>
+                {s.label && (
+                  <p className="text-[0.7rem] text-foreground/40 font-mono">{s.discordId}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => removeStaff.mutate(s.discordId)}
+                disabled={removeStaff.isPending}
+                className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                aria-label="Retirer"
+              >
+                <UserMinus className="w-3.5 h-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

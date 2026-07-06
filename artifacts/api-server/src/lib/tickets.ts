@@ -29,7 +29,7 @@ function db() {
   return d;
 }
 
-/** Whether the user can see a given ticket (author, participant, claimer, or gérant of its faction). */
+/** Whether the user can see a given ticket (author, participant, claimer, gérant of its faction, or general staff for Général tickets). */
 export async function canAccessTicket(
   user: SessionUser,
   ticket: Ticket,
@@ -38,6 +38,7 @@ export async function canAccessTicket(
   if (ticket.authorId === user.id) return true;
   if (ticket.claimedBy === user.id) return true;
   if (user.gerantFactions.includes(ticket.faction)) return true;
+  if (user.isGeneralStaff && ticket.faction === "Général") return true;
   const participants = await db()
     .select({ id: ticketParticipantsTable.id })
     .from(ticketParticipantsTable)
@@ -52,7 +53,10 @@ export async function canAccessTicket(
 }
 
 export function isStaffFor(user: SessionUser, ticket: Ticket): boolean {
-  return user.isResponsable || user.gerantFactions.includes(ticket.faction);
+  if (user.isResponsable) return true;
+  if (user.gerantFactions.includes(ticket.faction)) return true;
+  if (user.isGeneralStaff && ticket.faction === "Général") return true;
+  return false;
 }
 
 export async function getTicketById(id: number): Promise<Ticket | null> {
