@@ -19,7 +19,6 @@ const basePath = process.env.BASE_PATH || "/";
 const GMD_HOST = "51.91.215.65";
 const GMD_PORT = 27015;
 
-// A2S_INFO initial request (server may reply with a challenge)
 const A2S_HEADER = Buffer.from([0xff, 0xff, 0xff, 0xff]);
 const A2S_INFO_PAYLOAD = Buffer.from([
   0x54,
@@ -39,19 +38,18 @@ function queryGmod(): Promise<{ online: true; players: number; maxPlayers: numbe
     let challenged = false;
 
     const timer = setTimeout(() => {
-      socket.close();
+      try { socket.close(); } catch {}
       reject(new Error("timeout"));
     }, 5000);
 
     const parseInfo = (msg: Buffer) => {
-      // msg: FF FF FF FF 49 <proto> <name\0> <map\0> <folder\0> <game\0> <appid:2> <players:1> <max:1>
       if (msg.length < 9 || msg[4] !== 0x49) { reject(new Error("bad type")); return; }
       let off = 6;
       const name   = readNullString(msg, off); off = name.offset;
       const map    = readNullString(msg, off); off = map.offset;
       const folder = readNullString(msg, off); off = folder.offset;
       const game   = readNullString(msg, off); off = game.offset;
-      off += 2; // appid short
+      off += 2;
       const players    = msg[off]     ?? 0;
       const maxPlayers = msg[off + 1] ?? 0;
       resolve({ online: true, players, maxPlayers, name: name.value, map: map.value });
@@ -59,52 +57,63 @@ function queryGmod(): Promise<{ online: true; players: number; maxPlayers: numbe
 
     socket.on("message", (msg) => {
       if (msg[4] === 0x41 && !challenged) {
-        // Challenge response — resend with the 4 challenge bytes appended
         challenged = true;
         const challenge = msg.slice(5, 9);
         const req = Buffer.concat([A2S_HEADER, A2S_INFO_PAYLOAD, challenge]);
         socket.send(req, 0, req.length, GMD_PORT, GMD_HOST);
       } else if (msg[4] === 0x49) {
         clearTimeout(timer);
-        socket.close();
+        try { socket.close(); } catch {}
         parseInfo(msg);
       } else {
         clearTimeout(timer);
-        socket.close();
+        try { socket.close(); } catch {}
         reject(new Error(`unexpected type 0x${msg[4]?.toString(16)}`));
       }
     });
 
     socket.on("error", (err) => {
       clearTimeout(timer);
-      socket.close();
+      try { socket.close(); } catch {}
       reject(err);
     });
 
-    // Initial send
     const req = Buffer.concat([A2S_HEADER, A2S_INFO_PAYLOAD]);
     socket.send(req, 0, req.length, GMD_PORT, GMD_HOST);
   });
+}
+
+// Cache polled in the background every 30s — browser gets an instant response
+type CachedStatus = { online: boolean; players: number | null; maxPlayers: number | null };
+let cachedStatus: CachedStatus = { online: false, players: null, maxPlayers: null };
+
+async function pollOnce() {
+  try {
+    const info = await queryGmod();
+    cachedStatus = { online: true, players: info.players, maxPlayers: info.maxPlayers };
+  } catch {
+    cachedStatus = { online: false, players: null, maxPlayers: null };
+  }
 }
 
 function serverStatusPlugin(): Plugin {
   return {
     name: "server-status",
     configureServer(server) {
-      server.middlewares.use(
-        "/api/server-status",
-        async (_req: IncomingMessage, res: ServerResponse) => {
-          try {
-            const info = await queryGmod();
-            res.setHeader("Content-Type", "application/json");
-            res.setHeader("Cache-Control", "no-store");
-            res.end(JSON.stringify(info));
-          } catch {
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ online: false, players: null, maxPlayers: null }));
-          }
-        },
-      );
+      // Kick off polling immediately, then every 30s
+      pollOnce();
+      const interval = setInterval(pollOnce, 30_000);
+
+      // Clean up on server close
+      server.httpServer?.on("close", () => clearInterval(interval));
+
+      // Middleware: catch the path manually so no connect prefix-match issues
+      server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
+        if (req.url !== "/vite-server-status") { next(); return; }
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-store");
+        res.end(JSON.stringify(cachedStatus));
+      });
     },
   };
 }

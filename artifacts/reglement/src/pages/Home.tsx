@@ -15,7 +15,7 @@ import {
 import { useContent } from "@/lib/use-content";
 import { useAuth } from "@/lib/use-auth";
 
-const SERVER_STATUS_URL = "/api/server-status";
+const SERVER_STATUS_URL = "/vite-server-status";
 
 const groupIcons: Record<string, typeof BookOpen> = {
   "notions-de-bases": BookOpen,
