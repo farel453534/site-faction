@@ -27,39 +27,22 @@ type PlayerCountState =
   | { status: "ok"; count: number }
   | { status: "error" };
 
-function readMetaStatus(): { online: boolean; players: number | null; dev?: true } | null {
-  try {
-    const text = document.getElementById("__gmod_status__")?.textContent;
-    if (!text) return null;
-    return JSON.parse(text) as { online: boolean; players: number | null; dev?: true };
-  } catch {
-    return null;
-  }
-}
-
 function useServerPlayerCount(): PlayerCountState {
   const [state, setState] = useState<PlayerCountState>({ status: "loading" });
 
   useEffect(() => {
-    // 1. Try the meta tag injected by the Vite dev plugin
-    const meta = readMetaStatus();
-    if (meta?.dev === true) {
-      if (meta.online && typeof meta.players === "number") {
-        setState({ status: "ok", count: meta.players });
-      } else {
-        setState({ status: "error" });
-      }
-      return; // dev mode — no fetch needed
-    }
-
-    // 2. Production: fetch from the API server
+    // Dev: fetch from the Vite middleware endpoint (no API server needed)
+    // Prod: fetch from the Express API server
+    const url = import.meta.env.DEV ? "/_gmod" : "/api/server-status";
     let cancelled = false;
-    async function fetch_() {
+
+    async function poll() {
       try {
-        const res = await fetch("/api/server-status", {
+        const res = await fetch(url, {
           signal: AbortSignal.timeout(8000),
           cache: "no-store",
         });
+        if (!res.ok) throw new Error("non-ok");
         const data = (await res.json()) as { online: boolean; players: number | null };
         if (cancelled) return;
         if (data?.online && typeof data.players === "number") {
@@ -71,8 +54,9 @@ function useServerPlayerCount(): PlayerCountState {
         if (!cancelled) setState({ status: "error" });
       }
     }
-    fetch_();
-    const id = setInterval(fetch_, 60_000);
+
+    poll();
+    const id = setInterval(poll, 30_000);
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
