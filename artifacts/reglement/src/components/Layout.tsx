@@ -158,6 +158,15 @@ export default function Layout({ children }: { children: ReactNode }) {
         {/* Right side */}
         <div className="flex items-center gap-2 md:gap-3 ml-auto">
           <a
+            href="https://mssclick-poudlard.gitbook.io/wiki"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden sm:flex items-center gap-2 rounded-full bg-white/[0.05] border border-white/10 px-3.5 py-2 text-sm text-foreground hover:border-primary/50 transition-colors"
+          >
+            <BookOpen className="w-4 h-4 text-primary" />
+            <span className="hidden md:inline">Wiki</span>
+          </a>
+          <a
             href={DISCORD_INVITE}
             target="_blank"
             rel="noreferrer"
