@@ -413,7 +413,7 @@ export default function Tickets() {
 }
 
 const FACTIONS = ["Mangemort", "Auror", "Ministère", "Professeur", "Mage-Indépendant"] as const;
-const STRUCTURED_CATEGORIES = ["don", "classe", "ck", "traitrise"] as const;
+const STRUCTURED_CATEGORIES = ["don", "classe", "ck", "traitrise", "question"] as const;
 type StructuredCategory = (typeof STRUCTURED_CATEGORIES)[number];
 
 function isStructured(cat: string): cat is StructuredCategory {
@@ -476,6 +476,10 @@ function CreateTicketModal({
   const [raisonTrahison, setRaisonTrahison] = useState("");
   const [autreFaction, setAutreFaction] = useState("");
   const [apportRp, setApportRp] = useState("");
+
+  /* ── question (plaintes/demandes gérant) ── */
+  const [typeQuestion, setTypeQuestion] = useState("");
+  const [descriptionQuestion, setDescriptionQuestion] = useState("");
 
   /* ── autre chose (optional, all structured) ── */
   const [autreChose, setAutreChose] = useState("");
@@ -572,6 +576,17 @@ function CreateTicketModal({
           ...footer,
         ].join("\n");
 
+      case "question":
+        return [
+          ...header,
+          `**Faction :** ${faction}`,
+          `**Type :** ${typeQuestion}`,
+          "",
+          "**Description :**",
+          descriptionQuestion.trim(),
+          ...footer,
+        ].join("\n");
+
       default:
         return body;
     }
@@ -609,6 +624,9 @@ function CreateTicketModal({
       setError("Merci de remplir tous les champs obligatoires."); return;
     }
     if (presetCategory === "traitrise" && (!raisonTrahison.trim() || !autreFaction.trim() || !apportRp.trim())) {
+      setError("Merci de remplir tous les champs obligatoires."); return;
+    }
+    if (presetCategory === "question" && (!typeQuestion || !descriptionQuestion.trim())) {
       setError("Merci de remplir tous les champs obligatoires."); return;
     }
 
@@ -808,6 +826,25 @@ function CreateTicketModal({
                     <FieldLabel>Celà va rajouter quoi à votre RP ? <span className="text-primary">*</span></FieldLabel>
                     <textarea value={apportRp} onChange={(e) => setApportRp(e.target.value)}
                       placeholder="Quel apport cette trahison apporte-t-elle à votre personnage ?" rows={4} className={textareaCls} />
+                  </div>
+                </>
+              )}
+
+              {/* ── QUESTION spécifique ── */}
+              {presetCategory === "question" && (
+                <>
+                  <div>
+                    <FieldLabel>Type <span className="text-primary">*</span></FieldLabel>
+                    <select value={typeQuestion} onChange={(e) => setTypeQuestion(e.target.value)} className={selectCls}>
+                      <option value="">— Plainte ou Demande ? —</option>
+                      <option value="Plainte">Plainte</option>
+                      <option value="Demande">Demande</option>
+                    </select>
+                  </div>
+                  <div>
+                    <FieldLabel>Description <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={descriptionQuestion} onChange={(e) => setDescriptionQuestion(e.target.value)}
+                      placeholder="Explique la situation en détail…" rows={5} className={textareaCls} />
                   </div>
                 </>
               )}
