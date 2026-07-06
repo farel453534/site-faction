@@ -20,5 +20,6 @@
 export * from "./admins";
 export * from "./blacklists";
 export * from "./content";
+export * from "./general-staff";
 export * from "./tickets";
 export * from "./user-profiles";

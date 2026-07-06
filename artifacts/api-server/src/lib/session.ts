@@ -11,6 +11,8 @@ export interface SessionUser {
   /** Highest grade role held within `faction`, or null if none/no faction. */
   grade: string | null;
   isResponsable: boolean;
+  /** Whether this user is part of the general staff (can manage general tickets). */
+  isGeneralStaff: boolean;
   /** All factions this user manages as gérant (a user can hold several gérant roles). */
   gerantFactions: string[];
 }

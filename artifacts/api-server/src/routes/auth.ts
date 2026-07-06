@@ -15,6 +15,7 @@ import {
 } from "../lib/discord";
 import { SESSION_COOKIE, readSession, type SessionUser } from "../lib/session";
 import { isAdmin } from "../lib/admin";
+import { isGeneralStaff } from "../lib/general-staff";
 import { getBaseUrl } from "../lib/request-url";
 import { upsertUserProfile } from "../lib/user-profiles";
 
@@ -93,20 +94,23 @@ router.get("/auth/discord/callback", async (req, res) => {
 
     const roles = guildMember.roles ?? [];
     const faction = detectFaction(roles);
-    const isResponsable = (user as DiscordUser).id === RESPONSABLE_ID;
+    const userId = (user as DiscordUser).id;
+    const isResponsable = userId === RESPONSABLE_ID;
     // The Responsable manages every faction, regardless of which gérant roles
     // they personally hold on Discord — full oversight of all tickets/members.
     const gerantFactions = isResponsable
       ? FACTION_ROLES.map((f) => f.name)
       : detectGerantFactions(roles);
+    const generalStaff = isResponsable ? false : await isGeneralStaff(userId);
     const session: SessionUser = {
-      id: (user as DiscordUser).id,
+      id: userId,
       username: (user as DiscordUser).username,
       global_name: (user as DiscordUser).global_name ?? null,
       avatar: (user as DiscordUser).avatar ?? null,
       faction,
       grade: detectGrade(faction, roles),
       isResponsable,
+      isGeneralStaff: generalStaff,
       gerantFactions,
     };
     res.cookie(SESSION_COOKIE, JSON.stringify(session), {
@@ -145,6 +149,7 @@ router.get("/auth/me", async (req, res) => {
       faction: user.faction ?? null,
       grade: user.grade ?? null,
       isResponsable: user.isResponsable ?? false,
+      isGeneralStaff: user.isGeneralStaff ?? false,
       gerantFactions: user.gerantFactions ?? [],
     },
     isAdmin: await isAdmin(user.id),
