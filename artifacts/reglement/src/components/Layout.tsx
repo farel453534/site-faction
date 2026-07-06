@@ -244,6 +244,19 @@ export default function Layout({ children }: { children: ReactNode }) {
                 label="Tickets"
                 active={location === "/tickets"}
               />
+              {user.gerantFactions.length > 0 && (
+                <RailButton
+                  as="link"
+                  href="/gerant"
+                  icon={KeyRound}
+                  label={
+                    user.gerantFactions.length === 1
+                      ? `Gérant · ${user.gerantFactions[0]}`
+                      : `Gérant (${user.gerantFactions.length} factions)`
+                  }
+                  active={location === "/gerant"}
+                />
+              )}
             </>
           )}
         </div>
