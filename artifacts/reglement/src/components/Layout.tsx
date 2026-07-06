@@ -160,12 +160,12 @@ export default function Layout({ children }: { children: ReactNode }) {
   const flyoutGroup = ruleGroups.find((g) => g.slug === openFlyout) ?? null;
 
   return (
-    <div className="flex h-screen w-full flex-col bg-stage bg-texture overflow-hidden">
+    <div className="flex h-screen w-full flex-col bg-[#070707] overflow-hidden">
       {/* Topbar (full width) */}
       <header className="h-[68px] shrink-0 flex items-center gap-4 px-4 md:px-6 border-b border-white/5 z-30">
         {/* Emblem */}
         <Link href="/" className="flex items-center gap-3 shrink-0 group">
-          <div className="w-11 h-11 rounded-full overflow-hidden border border-primary/40 bg-primary/10 group-hover:border-primary/70 transition-colors">
+          <div className="w-[54px] h-[54px] rounded-full overflow-hidden border border-primary/40 bg-primary/10 group-hover:border-primary/70 transition-colors">
             <img
               src={`${import.meta.env.BASE_URL}favicon.png`}
               alt="MSSClick"
@@ -173,10 +173,10 @@ export default function Layout({ children }: { children: ReactNode }) {
             />
           </div>
           <div className="hidden lg:block leading-tight">
-            <div className="font-serif font-extrabold text-foreground text-[0.95rem] tracking-tight">
+            <div className="font-serif font-extrabold text-foreground text-[1.15rem] tracking-tight">
               MSSClick
             </div>
-            <div className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-primary">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-primary">
               Faction
             </div>
           </div>
