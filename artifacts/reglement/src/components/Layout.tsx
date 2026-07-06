@@ -16,6 +16,7 @@ import {
   KeyRound,
   Ticket,
   ScrollText,
+  BookMarked,
 } from "lucide-react";
 import { FaDiscord, FaXTwitter, FaYoutube, FaTiktok, FaCartShopping } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -219,6 +220,13 @@ export default function Layout({ children }: { children: ReactNode }) {
             label="Règlement"
             active={location === "/reglement"}
           />
+          {/* Wiki externe */}
+          <RailButton
+            as="a"
+            href="https://mssclick-poudlard.gitbook.io/wiki"
+            icon={BookMarked}
+            label="Wiki"
+          />
           <div className="h-px w-7 bg-white/10 my-1" />
           {/* Groupes de règles */}
           {ruleGroups.map((group) => {
@@ -327,11 +335,11 @@ function RailButton({
   active,
   onClick,
 }: {
-  as: "link" | "button";
+  as: "link" | "a" | "button";
   href?: string;
   icon: typeof House;
   label: string;
-  active: boolean;
+  active?: boolean;
   onClick?: () => void;
 }) {
   const cls = `group relative w-11 h-11 flex items-center justify-center rounded-full transition-colors ${
@@ -352,6 +360,13 @@ function RailButton({
       <Link href={href} className={cls} aria-label={label}>
         {inner}
       </Link>
+    );
+  }
+  if (as === "a" && href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={cls} aria-label={label}>
+        {inner}
+      </a>
     );
   }
   return (

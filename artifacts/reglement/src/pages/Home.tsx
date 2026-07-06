@@ -8,6 +8,7 @@ import {
   Sparkles,
   Swords,
   Ticket,
+  BookMarked,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import type { IconType } from "react-icons";
@@ -60,6 +61,14 @@ export default function Home() {
       href: DISCORD_INVITE,
       external: true,
       icon: FaDiscord,
+    },
+    {
+      key: "wiki",
+      title: "Wiki",
+      description: "Guides, lore et informations sur le serveur MSSClick Poudlard.",
+      href: "https://mssclick-poudlard.gitbook.io/wiki",
+      external: true,
+      icon: BookMarked,
     },
     {
       key: "tickets",
