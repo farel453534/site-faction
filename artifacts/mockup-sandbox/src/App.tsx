@@ -1,10 +1,9 @@
 import React from 'react';
-import { VideoTemplate } from './components/video/VideoTemplate';
 
 function App() {
   return (
-    <div className="w-full h-screen bg-bg-dark">
-      <VideoTemplate />
+    <div className="w-full h-screen flex items-center justify-center bg-zinc-950 text-zinc-400 text-sm">
+      Mockup Sandbox — navigue vers <code className="mx-1 text-amber-400">/preview/…</code> pour voir tes composants.
     </div>
   );
 }

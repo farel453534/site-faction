@@ -32,9 +32,9 @@ export function useVideoPlayer(
   const { durations, onVideoEnd, loop = true } = options;
 
   // Captured once on mount -- durations must be a static object
-  const sceneKeys = useRef(Object.keys(durations)).current;
+  const sceneKeys = useRef(Object.keys(durations ?? {})).current;
   const totalScenes = sceneKeys.length;
-  const durationsArray = useRef(Object.values(durations)).current;
+  const durationsArray = useRef(Object.values(durations ?? {})).current;
 
   const [currentScene, setCurrentScene] = useState(0);
   const [hasEnded, setHasEnded] = useState(false);
