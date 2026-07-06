@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import { Link, useSearch } from "wouter";
 import {
   ArrowLeft,
@@ -44,6 +44,7 @@ import {
   useGeneralStaff,
   useAddGeneralStaff,
   useRemoveGeneralStaff,
+  useMyProfile,
   type TicketEntry,
   type TicketAttachment,
 } from "@/lib/use-auth";
@@ -411,6 +412,29 @@ export default function Tickets() {
   );
 }
 
+const FACTIONS = ["Mangemort", "Auror", "Ministère", "Professeur", "Mage-Indépendant"] as const;
+const STRUCTURED_CATEGORIES = ["don", "classe", "ck", "traitrise"] as const;
+type StructuredCategory = (typeof STRUCTURED_CATEGORIES)[number];
+
+function isStructured(cat: string): cat is StructuredCategory {
+  return (STRUCTURED_CATEGORIES as readonly string[]).includes(cat);
+}
+
+/* ── shared field primitives ── */
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-foreground/50 mb-1.5">
+      {children}
+    </label>
+  );
+}
+const inputCls =
+  "w-full rounded-xl bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/35 focus:outline-none focus:border-primary/50 transition-colors";
+const textareaCls =
+  "w-full rounded-xl bg-white/[0.04] border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-foreground/35 focus:outline-none focus:border-primary/50 transition-colors resize-none";
+const selectCls =
+  "w-full rounded-xl bg-[#111] border border-white/10 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors";
+
 function CreateTicketModal({
   presetCategory,
   onClose,
@@ -418,71 +442,390 @@ function CreateTicketModal({
   presetCategory: string;
   onClose: () => void;
 }) {
+  const { user } = useAuth();
+  const profile = useMyProfile(true);
+  const steamIdSaved = profile.data?.steamId ?? null;
+  const create = useCreateTicket();
+  const uid = useId();
+
+  /* ── common ── */
+  const [steamId, setSteamId] = useState("");
+  const [nom, setNom] = useState("");
+  const [faction, setFaction] = useState("");
+
+  /* ── don ── */
+  const [histoire, setHistoire] = useState("");
+  const [pouvoir, setPouvoir] = useState("");
+  const [connaissance, setConnaissance] = useState("");
+  const [raison, setRaison] = useState("");
+  const [utilisation, setUtilisation] = useState("");
+
+  /* ── classe ── */
+  const [roleClasse, setRoleClasse] = useState("");
+  const [grade, setGrade] = useState("");
+  const [pourquoiIdeal, setPourquoiIdeal] = useState("");
+  const [definition, setDefinition] = useState("");
+  const [adaptation, setAdaptation] = useState("");
+
+  /* ── ck ── */
+  const [cibleNom, setCibleNom] = useState("");
+  const [cibleWl, setCibleWl] = useState("");
+  const [histoireCk, setHistoireCk] = useState("");
+
+  /* ── traitrise ── */
+  const [raisonTrahison, setRaisonTrahison] = useState("");
+  const [autreFaction, setAutreFaction] = useState("");
+  const [apportRp, setApportRp] = useState("");
+
+  /* ── autre chose (optional, all structured) ── */
+  const [autreChose, setAutreChose] = useState("");
+
+  /* ── simple fallback (naissance-rp, question, …) ── */
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const create = useCreateTicket();
 
+  const [error, setError] = useState<string | null>(null);
+
+  const structured = isStructured(presetCategory);
   const modalTitle = ALL_CATEGORY_LABELS[presetCategory] ?? "Nouvelle demande";
+
+  const discordLine = `${user?.displayName ?? ""}${user?.username ? ` (@${user.username})` : ""}`;
+  const steamLine = steamIdSaved ?? (steamId.trim() || "Non renseigné");
+
+  function buildBody(): string {
+    const header = [
+      `**Discord :** ${discordLine}`,
+      `**SteamID :** ${steamLine}`,
+      "",
+      `**Prénom et Nom :** ${nom.trim()}`,
+    ];
+
+    const footer = autreChose.trim()
+      ? ["", "**Autre chose :**", autreChose.trim()]
+      : [];
+
+    switch (presetCategory as StructuredCategory) {
+      case "don":
+        return [
+          ...header,
+          `**Faction :** ${faction}`,
+          "",
+          `**Pouvoir/Don demandé :** ${pouvoir.trim()}`,
+          "",
+          "**Histoire de votre personnage :**",
+          histoire.trim(),
+          "",
+          "**Connaissance sur ce Pouvoir/Don :**",
+          connaissance.trim(),
+          "",
+          "**Raison de l'obtention :**",
+          raison.trim(),
+          "",
+          "**Utilisation en RP :**",
+          utilisation.trim(),
+          ...footer,
+        ].join("\n");
+
+      case "classe":
+        return [
+          ...header,
+          `**Rôle demandé :** ${roleClasse}`,
+          `**Faction :** ${faction}`,
+          `**Grade actuel :** ${grade.trim()}`,
+          "",
+          "**Pourquoi êtes-vous la personne idéale pour ce rôle ?**",
+          pourquoiIdeal.trim(),
+          "",
+          "**Définition et fonction de ce rôle dans votre faction :**",
+          definition.trim(),
+          "",
+          "**Comment comptez-vous adapter votre RP à ce nouveau rôle ?**",
+          adaptation.trim(),
+          ...footer,
+        ].join("\n");
+
+      case "ck":
+        return [
+          ...header,
+          `**Faction :** ${faction}`,
+          "",
+          `**Cible — Prénom et Nom :** ${cibleNom.trim()}`,
+          `**Cible — Whitelist :** ${cibleWl.trim()}`,
+          "",
+          "**Histoire / Raison :**",
+          histoireCk.trim(),
+          ...footer,
+        ].join("\n");
+
+      case "traitrise":
+        return [
+          ...header,
+          `**Faction :** ${faction}`,
+          "",
+          "**Pourquoi voulez-vous trahir votre Faction ?**",
+          raisonTrahison.trim(),
+          "",
+          `**Comptez-vous aller dans une autre Faction ?** ${autreFaction.trim()}`,
+          "",
+          "**Celà va rajouter quoi à votre RP ?**",
+          apportRp.trim(),
+          ...footer,
+        ].join("\n");
+
+      default:
+        return body;
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!subject.trim() || !body.trim()) {
-      setError("Merci de remplir le sujet et le message.");
+
+    if (!structured) {
+      if (!subject.trim() || !body.trim()) {
+        setError("Merci de remplir le sujet et le message.");
+        return;
+      }
+      create.mutate(
+        { category: presetCategory, subject: subject.trim(), body: body.trim() },
+        { onSuccess: onClose, onError: (err) => setError((err as Error).message) },
+      );
       return;
     }
+
+    /* Validate common */
+    if (!nom.trim()) { setError("Merci d'indiquer ton Prénom et Nom RP."); return; }
+    if (!faction) { setError("Merci de choisir ta faction."); return; }
+    if (!steamIdSaved && !steamId.trim()) { setError("Merci d'indiquer ton SteamID."); return; }
+
+    /* Validate per-type */
+    if (presetCategory === "don" && (!histoire.trim() || !pouvoir.trim() || !connaissance.trim() || !raison.trim() || !utilisation.trim())) {
+      setError("Merci de remplir tous les champs obligatoires."); return;
+    }
+    if (presetCategory === "classe" && (!roleClasse || !grade.trim() || !pourquoiIdeal.trim() || !definition.trim() || !adaptation.trim())) {
+      setError("Merci de remplir tous les champs obligatoires."); return;
+    }
+    if (presetCategory === "ck" && (!cibleNom.trim() || !cibleWl.trim() || !histoireCk.trim())) {
+      setError("Merci de remplir tous les champs obligatoires."); return;
+    }
+    if (presetCategory === "traitrise" && (!raisonTrahison.trim() || !autreFaction.trim() || !apportRp.trim())) {
+      setError("Merci de remplir tous les champs obligatoires."); return;
+    }
+
+    const autoSubject = `${modalTitle} — ${nom.trim()}`;
     create.mutate(
-      { category: presetCategory, subject: subject.trim(), body: body.trim() },
-      {
-        onSuccess: () => onClose(),
-        onError: (err) => setError((err as Error).message),
-      },
+      { category: presetCategory, subject: autoSubject, body: buildBody() },
+      { onSuccess: onClose, onError: (err) => setError((err as Error).message) },
     );
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-popover shadow-2xl shadow-black/60 animate-in slide-in-from-bottom-4 duration-300 max-h-[85vh] overflow-y-auto">
-        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-white/10 sticky top-0 bg-popover">
-          <h2 className="font-serif text-xl font-bold text-foreground">
-            {modalTitle}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fermer"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
-          >
+      <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-popover shadow-2xl shadow-black/60 animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-white/10 sticky top-0 bg-popover z-10">
+          <h2 className="font-serif text-xl font-bold text-foreground">{modalTitle}</h2>
+          <button type="button" onClick={onClose} aria-label="Fermer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Sujet"
-            className="w-full rounded-full bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors"
-          />
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Décris ta demande en détail…"
-            rows={5}
-            className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors resize-none"
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground font-semibold px-5 py-2.5 text-sm transition-colors disabled:opacity-50"
-          >
-            {create.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+
+          {/* ── Discord (always readonly) ── */}
+          <div>
+            <FieldLabel>Profil Discord</FieldLabel>
+            <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.04] border border-white/10 px-4 py-2.5">
+              <FaDiscord className="w-4 h-4 text-[#5865F2] shrink-0" />
+              <span className="text-sm text-foreground/70">{discordLine}</span>
+            </div>
+          </div>
+
+          {/* ── SteamID ── */}
+          <div>
+            <FieldLabel>SteamID</FieldLabel>
+            {steamIdSaved ? (
+              <div className="flex items-center gap-2 rounded-xl bg-white/[0.04] border border-white/10 px-4 py-2.5">
+                <span className="text-sm font-mono text-foreground/70">{steamIdSaved}</span>
+                <span className="ml-auto text-[0.65rem] text-foreground/35 uppercase tracking-wider">automatique</span>
+              </div>
             ) : (
-              <Send className="w-4 h-4" />
+              <input
+                id={`${uid}-steam`}
+                type="text"
+                value={steamId}
+                onChange={(e) => setSteamId(e.target.value)}
+                placeholder="SteamID32 ou SteamID64"
+                className={inputCls}
+              />
             )}
+          </div>
+
+          {/* ── Champs simples (naissance-rp, question, …) ── */}
+          {!structured && (
+            <>
+              <div>
+                <FieldLabel>Sujet</FieldLabel>
+                <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Sujet de ta demande" className={inputCls} />
+              </div>
+              <div>
+                <FieldLabel>Message</FieldLabel>
+                <textarea value={body} onChange={(e) => setBody(e.target.value)}
+                  placeholder="Décris ta demande en détail…" rows={6} className={textareaCls} />
+              </div>
+            </>
+          )}
+
+          {/* ── Champs communs (structured) ── */}
+          {structured && (
+            <>
+              <div>
+                <FieldLabel>Prénom et Nom <span className="text-primary">*</span></FieldLabel>
+                <input type="text" value={nom} onChange={(e) => setNom(e.target.value)}
+                  placeholder="Ex : Jean Dupont" className={inputCls} />
+              </div>
+
+              {/* ── CLASSE : Rôle avant faction ── */}
+              {presetCategory === "classe" && (
+                <div>
+                  <FieldLabel>Quel Rôle ? <span className="text-primary">*</span></FieldLabel>
+                  <select value={roleClasse} onChange={(e) => setRoleClasse(e.target.value)} className={selectCls}>
+                    <option value="">— Choisir un rôle —</option>
+                    <option value="Erudit">Erudit</option>
+                    <option value="Médicomage">Médicomage</option>
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <FieldLabel>Faction <span className="text-primary">*</span></FieldLabel>
+                <select value={faction} onChange={(e) => setFaction(e.target.value)} className={selectCls}>
+                  <option value="">— Choisir une faction —</option>
+                  {FACTIONS.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* ── CLASSE : Grade ── */}
+              {presetCategory === "classe" && (
+                <div>
+                  <FieldLabel>Quel est votre grade ? <span className="text-primary">*</span></FieldLabel>
+                  <input type="text" value={grade} onChange={(e) => setGrade(e.target.value)}
+                    placeholder="Ex : Apprenti, Maître…" className={inputCls} />
+                </div>
+              )}
+
+              {/* ── DON spécifique ── */}
+              {presetCategory === "don" && (
+                <>
+                  <div>
+                    <FieldLabel>Histoire de votre personnage <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={histoire} onChange={(e) => setHistoire(e.target.value)}
+                      placeholder="Racontez l'histoire de votre personnage…" rows={4} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Pouvoir/Don demandé <span className="text-primary">*</span></FieldLabel>
+                    <input type="text" value={pouvoir} onChange={(e) => setPouvoir(e.target.value)}
+                      placeholder="Quel pouvoir ou don souhaitez-vous ?" className={inputCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Connaissance sur ce Pouvoir/Don <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={connaissance} onChange={(e) => setConnaissance(e.target.value)}
+                      placeholder="Qu'est-ce que vous savez sur ce don ?" rows={3} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Raison de l'obtention <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={raison} onChange={(e) => setRaison(e.target.value)}
+                      placeholder="Pourquoi méritez-vous ce don ?" rows={3} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Quel utilisation allez-vous en faire en RP ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={utilisation} onChange={(e) => setUtilisation(e.target.value)}
+                      placeholder="Comment allez-vous l'utiliser en jeu ?" rows={3} className={textareaCls} />
+                  </div>
+                </>
+              )}
+
+              {/* ── CLASSE spécifique ── */}
+              {presetCategory === "classe" && (
+                <>
+                  <div>
+                    <FieldLabel>Pourquoi pensez-vous être la personne idéale pour ce rôle ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={pourquoiIdeal} onChange={(e) => setPourquoiIdeal(e.target.value)}
+                      placeholder="Argumentez votre candidature…" rows={4} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Quelle est la définition et la fonction de ce rôle dans votre faction ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={definition} onChange={(e) => setDefinition(e.target.value)}
+                      placeholder="Selon vous, quel est le rôle de cet Erudit / Médicomage ?" rows={4} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Comment comptez-vous adapter votre RP à ce nouveau rôle ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={adaptation} onChange={(e) => setAdaptation(e.target.value)}
+                      placeholder="Comment allez-vous incarner ce rôle ?" rows={4} className={textareaCls} />
+                  </div>
+                </>
+              )}
+
+              {/* ── CK spécifique ── */}
+              {presetCategory === "ck" && (
+                <>
+                  <div>
+                    <FieldLabel>Prénom et Nom de la personne visée <span className="text-primary">*</span></FieldLabel>
+                    <input type="text" value={cibleNom} onChange={(e) => setCibleNom(e.target.value)}
+                      placeholder="Prénom Nom de la cible" className={inputCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Sa Whitelist ? <span className="text-primary">*</span></FieldLabel>
+                    <input type="text" value={cibleWl} onChange={(e) => setCibleWl(e.target.value)}
+                      placeholder="Ex : Mangemort, Auror…" className={inputCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>L'histoire / Raison qui a mené à cette demande <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={histoireCk} onChange={(e) => setHistoireCk(e.target.value)}
+                      placeholder="Expliquez le contexte RP détaillé…" rows={5} className={textareaCls} />
+                  </div>
+                </>
+              )}
+
+              {/* ── TRAITRISE spécifique ── */}
+              {presetCategory === "traitrise" && (
+                <>
+                  <div>
+                    <FieldLabel>Pourquoi voulez-vous trahir votre Faction ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={raisonTrahison} onChange={(e) => setRaisonTrahison(e.target.value)}
+                      placeholder="Expliquez vos motivations RP…" rows={4} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Comptez-vous aller dans une autre Faction ? <span className="text-primary">*</span></FieldLabel>
+                    <input type="text" value={autreFaction} onChange={(e) => setAutreFaction(e.target.value)}
+                      placeholder="Oui (laquelle ?) ou Non" className={inputCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Celà va rajouter quoi à votre RP ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={apportRp} onChange={(e) => setApportRp(e.target.value)}
+                      placeholder="Quel apport cette trahison apporte-t-elle à votre personnage ?" rows={4} className={textareaCls} />
+                  </div>
+                </>
+              )}
+
+              {/* ── Autre chose (optionnel) ── */}
+              <div>
+                <FieldLabel>Autre chose ? <span className="text-foreground/30 font-normal normal-case tracking-normal">(optionnel)</span></FieldLabel>
+                <textarea value={autreChose} onChange={(e) => setAutreChose(e.target.value)}
+                  placeholder="Toute information complémentaire…" rows={3} className={textareaCls} />
+              </div>
+            </>
+          )}
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <button type="submit" disabled={create.isPending}
+            className="inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground font-semibold px-5 py-2.5 text-sm transition-colors disabled:opacity-50">
+            {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Envoyer
           </button>
         </form>
