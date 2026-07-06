@@ -194,13 +194,21 @@ export default function Layout({ children }: { children: ReactNode }) {
           ref={railRef}
           className="w-16 shrink-0 flex flex-col items-center gap-2 py-5 border-r border-white/5 z-30"
         >
-          {/* Règlement — tout en haut */}
+          {/* Accueil */}
           <RailButton
             as="link"
             href="/"
+            icon={House}
+            label="Accueil"
+            active={isHome}
+          />
+          {/* Règlement spécifique au RP */}
+          <RailButton
+            as="link"
+            href="/reglement"
             icon={ScrollText}
             label="Règlement"
-            active={isHome}
+            active={location === "/reglement"}
           />
           <div className="h-px w-7 bg-white/10 my-1" />
           {/* Groupes de règles */}
