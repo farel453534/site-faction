@@ -77,7 +77,7 @@ const TICKET_CATALOG = [
 
 const ALL_CATEGORY_LABELS: Record<string, string> = {
   ...Object.fromEntries(TICKET_CATALOG.flatMap((s) => s.types.map((t) => [t.key, t.label]))),
-  question: "Question à mon gérant",
+  question: "Plaintes/Demandes à mon gérant",
   plainte: "Plainte",
   demande: "Demande",
 };
@@ -285,10 +285,10 @@ export default function Tickets() {
                       </span>
                       <div className="min-w-0 pt-0.5">
                         <p className="font-bold text-foreground leading-tight">
-                          Question à mon gérant
+                          Plaintes/Demandes à mon gérant
                         </p>
                         <p className="text-[0.78rem] text-foreground/50 mt-0.5 leading-snug">
-                          Poser une question aux gérants de {user.faction}
+                          Soumettre une plainte ou demande aux gérants de {user.faction}
                         </p>
                       </div>
                     </div>
