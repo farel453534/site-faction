@@ -34,12 +34,42 @@ type PlayerCountState =
   | { status: "error" };
 
 function useServerPlayerCount(): PlayerCountState {
-  const [state, setState] = useState<PlayerCountState>(() => {
-    const s = window.__GMOD_STATUS__;
-    if (!s) return { status: "loading" };
-    if (s.online && typeof s.players === "number") return { status: "ok", count: s.players };
-    return { status: "error" };
-  });
+  const injected = window.__GMOD_STATUS__;
+  const hasInjected = injected?.online === true && typeof injected.players === "number";
+
+  const [state, setState] = useState<PlayerCountState>(() =>
+    hasInjected
+      ? { status: "ok", count: injected!.players as number }
+      : { status: "loading" }
+  );
+
+  useEffect(() => {
+    // Dev: data was injected into the HTML — no fetch needed
+    if (hasInjected) return;
+
+    // Production: fetch from the API server
+    let cancelled = false;
+    async function fetch_() {
+      try {
+        const res = await fetch("/api/server-status", {
+          signal: AbortSignal.timeout(8000),
+          cache: "no-store",
+        });
+        const data = (await res.json()) as { online: boolean; players: number | null };
+        if (cancelled) return;
+        if (data?.online && typeof data.players === "number") {
+          setState({ status: "ok", count: data.players });
+        } else {
+          setState({ status: "error" });
+        }
+      } catch {
+        if (!cancelled) setState({ status: "error" });
+      }
+    }
+    fetch_();
+    const id = setInterval(fetch_, 60_000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return state;
 }

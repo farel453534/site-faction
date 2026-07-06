@@ -99,6 +99,7 @@ async function pollOnce() {
 function serverStatusPlugin(): Plugin {
   return {
     name: "server-status",
+    apply: "serve", // dev server only — never runs during production build
     // Inject cached status directly into every HTML response — no browser fetch needed
     transformIndexHtml() {
       return [
