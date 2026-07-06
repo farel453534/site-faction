@@ -16,6 +16,10 @@ import {
   Paperclip,
   FileText,
   Image as ImageIcon,
+  Skull,
+  Gift,
+  GraduationCap,
+  ChevronRight,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import {
@@ -49,7 +53,28 @@ const STATUS_COLORS: Record<TicketEntry["status"], string> = {
   closed: "bg-white/10 text-foreground/50 border-white/10",
 };
 
-type Scope = "mine" | "archives" | { faction: string };
+type Scope = "mine" | "demandes" | "archives" | { faction: string };
+
+const GENERAL_TICKET_TYPES = [
+  {
+    key: "ck",
+    label: "Demande de CK",
+    description: "Demander un Character Kill pour un personnage ciblé",
+    Icon: Skull,
+  },
+  {
+    key: "don",
+    label: "Demande de Don",
+    description: "Faire une demande de don en jeu",
+    Icon: Gift,
+  },
+  {
+    key: "classe",
+    label: "Demande de Classe",
+    description: "Demander un changement ou une attribution de classe",
+    Icon: GraduationCap,
+  },
+] as const;
 
 export default function Tickets() {
   const { user, isLoading: authLoading, login } = useAuth();
@@ -57,7 +82,7 @@ export default function Tickets() {
   const search = useSearch();
   const [scope, setScope] = useState<Scope>("mine");
   const [openTicketId, setOpenTicketId] = useState<number | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState<string | false>(false);
 
   // Deep link support: ?id=123 (from Discord notifications) opens the ticket directly.
   useEffect(() => {
@@ -151,6 +176,17 @@ export default function Tickets() {
           >
             Mes tickets
           </button>
+          <button
+            type="button"
+            onClick={() => setScope("demandes")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              scope === "demandes"
+                ? "bg-primary/90 text-primary-foreground"
+                : "text-foreground/60 hover:text-foreground"
+            }`}
+          >
+            Demandes
+          </button>
           {gerantFactions.map((f) => (
             <button
               key={f}
@@ -180,10 +216,10 @@ export default function Tickets() {
           )}
         </div>
 
-        {user.faction && (
+        {user.faction && scope !== "demandes" && (
           <button
             type="button"
-            onClick={() => setShowCreate(true)}
+            onClick={() => setShowCreate("wl")}
             className="inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground font-semibold px-4 py-2.5 text-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -194,11 +230,15 @@ export default function Tickets() {
 
       {!user.faction && scope === "mine" && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 mb-6 text-sm text-foreground/80">
-          Tu dois appartenir à une faction pour ouvrir un ticket.
+          Tu dois appartenir à une faction pour ouvrir un ticket WL. Les demandes générales (CK, Don, Classe) sont accessibles à tous.
         </div>
       )}
 
-      {list.isLoading && (
+      {scope === "demandes" && (
+        <GeneralRequestCatalog onOpen={(cat) => setShowCreate(cat)} />
+      )}
+
+      {scope !== "demandes" && list.isLoading && (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
             <div
@@ -209,13 +249,13 @@ export default function Tickets() {
         </div>
       )}
 
-      {list.isError && (
+      {scope !== "demandes" && list.isError && (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
           Impossible de charger les tickets pour le moment.
         </div>
       )}
 
-      {list.data && (
+      {scope !== "demandes" && list.data && (
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
           {list.data.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-foreground/50">
@@ -262,8 +302,11 @@ export default function Tickets() {
         </div>
       )}
 
-      {showCreate && (
-        <CreateTicketModal onClose={() => setShowCreate(false)} />
+      {showCreate !== false && (
+        <CreateTicketModal
+          presetCategory={showCreate !== "wl" ? showCreate : undefined}
+          onClose={() => setShowCreate(false)}
+        />
       )}
 
       {openTicketId !== null && (
@@ -277,12 +320,74 @@ export default function Tickets() {
   );
 }
 
-function CreateTicketModal({ onClose }: { onClose: () => void }) {
+const GENERAL_CATEGORY_LABELS: Record<string, string> = {
+  ck: "Demande de CK",
+  don: "Demande de Don",
+  classe: "Demande de Classe",
+};
+
+function GeneralRequestCatalog({
+  onOpen,
+}: {
+  onOpen: (category: string) => void;
+}) {
+  return (
+    <div className="animate-in fade-in duration-300">
+      <p className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-4">
+        Demandes générales
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {GENERAL_TICKET_TYPES.map(({ key, label, description, Icon }) => (
+          <div
+            key={key}
+            className="flex flex-col gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 hover:border-primary/30 hover:bg-white/[0.05] transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <span className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5 text-primary" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-serif font-semibold text-foreground leading-tight">
+                  {label}
+                </p>
+                <p className="text-xs text-foreground/55 mt-0.5 leading-snug">
+                  {description}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpen(key)}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/40 text-primary hover:bg-primary/10 font-semibold px-4 py-2 text-sm transition-colors w-full"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Ouvrir un ticket
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CreateTicketModal({
+  presetCategory,
+  onClose,
+}: {
+  presetCategory?: string;
+  onClose: () => void;
+}) {
+  const isGeneral = !!presetCategory;
   const [category, setCategory] = useState<"plainte" | "demande">("plainte");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const create = useCreateTicket();
+
+  const effectiveCategory = isGeneral ? presetCategory : category;
+  const modalTitle = isGeneral
+    ? (GENERAL_CATEGORY_LABELS[presetCategory] ?? "Nouvelle demande")
+    : "Nouveau ticket";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,7 +397,7 @@ function CreateTicketModal({ onClose }: { onClose: () => void }) {
       return;
     }
     create.mutate(
-      { category, subject: subject.trim(), body: body.trim() },
+      { category: effectiveCategory, subject: subject.trim(), body: body.trim() },
       {
         onSuccess: () => onClose(),
         onError: (err) => setError((err as Error).message),
@@ -305,7 +410,7 @@ function CreateTicketModal({ onClose }: { onClose: () => void }) {
       <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-popover shadow-2xl shadow-black/60 animate-in slide-in-from-bottom-4 duration-300 max-h-[85vh] overflow-y-auto">
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-white/10 sticky top-0 bg-popover">
           <h2 className="font-serif text-xl font-bold text-foreground">
-            Nouveau ticket
+            {modalTitle}
           </h2>
           <button
             type="button"
@@ -317,22 +422,24 @@ function CreateTicketModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit">
-            {(["plainte", "demande"] as const).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors ${
-                  category === c
-                    ? "bg-primary/90 text-primary-foreground"
-                    : "text-foreground/60 hover:text-foreground"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
+          {!isGeneral && (
+            <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit">
+              {(["plainte", "demande"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+                    category === c
+                      ? "bg-primary/90 text-primary-foreground"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
           <input
             type="text"
             value={subject}
@@ -343,7 +450,11 @@ function CreateTicketModal({ onClose }: { onClose: () => void }) {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Décris ta plainte ou ta demande…"
+            placeholder={
+              isGeneral
+                ? "Décris ta demande en détail…"
+                : "Décris ta plainte ou ta demande…"
+            }
             rows={5}
             className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors resize-none"
           />

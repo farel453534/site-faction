@@ -55,7 +55,9 @@ import {
 const router: IRouter = Router();
 
 const ID_RE = /^\d{15,25}$/;
-const CATEGORIES = new Set(["plainte", "demande"]);
+const WL_CATEGORIES = new Set(["plainte", "demande"]);
+const GENERAL_CATEGORIES = new Set(["ck", "don", "classe"]);
+const ALL_CATEGORIES = new Set([...WL_CATEGORIES, ...GENERAL_CATEGORIES]);
 const FACTION_NAMES = new Set(FACTION_ROLES.map((f) => f.name));
 
 function dbGuard(res: import("express").Response): boolean {
@@ -84,14 +86,12 @@ function serializeTicket(t: Awaited<ReturnType<typeof getTicketById>>) {
   };
 }
 
-// POST /tickets — a faction player opens a new complaint/request.
+// POST /tickets — open a new ticket.
+// WL categories (plainte/demande) require faction membership.
+// General categories (ck/don/classe) are open to any logged-in user.
 router.post("/tickets", requireAuth, async (req, res) => {
   if (!dbGuard(res)) return;
   const user = (req as AuthedRequest).user!;
-  if (!user.faction) {
-    res.status(403).json({ error: "no_faction" });
-    return;
-  }
   const body = req.body as {
     category?: unknown;
     subject?: unknown;
@@ -103,7 +103,7 @@ router.post("/tickets", requireAuth, async (req, res) => {
   const message =
     typeof body.body === "string" ? body.body.trim().slice(0, 4000) : "";
 
-  if (!CATEGORIES.has(category)) {
+  if (!ALL_CATEGORIES.has(category)) {
     res.status(400).json({ error: "invalid_category" });
     return;
   }
@@ -112,9 +112,17 @@ router.post("/tickets", requireAuth, async (req, res) => {
     return;
   }
 
+  const isGeneral = GENERAL_CATEGORIES.has(category);
+  if (!isGeneral && !user.faction) {
+    res.status(403).json({ error: "no_faction" });
+    return;
+  }
+
+  const faction = isGeneral ? "Général" : user.faction!;
+
   try {
     const ticket = await createTicket({
-      faction: user.faction,
+      faction,
       category,
       subject,
       authorId: user.id,
