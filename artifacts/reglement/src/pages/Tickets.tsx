@@ -413,7 +413,7 @@ export default function Tickets() {
 }
 
 const FACTIONS = ["Mangemort", "Auror", "Ministère", "Professeur", "Mage-Indépendant"] as const;
-const STRUCTURED_CATEGORIES = ["don", "classe", "ck", "traitrise", "question"] as const;
+const STRUCTURED_CATEGORIES = ["don", "classe", "ck", "traitrise", "question", "naissance-rp"] as const;
 type StructuredCategory = (typeof STRUCTURED_CATEGORIES)[number];
 
 function isStructured(cat: string): cat is StructuredCategory {
@@ -480,6 +480,19 @@ function CreateTicketModal({
   /* ── question (plaintes/demandes gérant) ── */
   const [typeQuestion, setTypeQuestion] = useState("");
   const [descriptionQuestion, setDescriptionQuestion] = useState("");
+
+  /* ── naissance-rp ── */
+  const [agePerso, setAgePerso] = useState("");
+  const [sexePerso, setSexePerso] = useState("");
+  const [nationalite, setNationalite] = useState("");
+  const [histoireNaiss, setHistoireNaiss] = useState("");
+  const [personnalite, setPersonnalite] = useState("");
+  const [objectifs, setObjectifs] = useState("");
+  const [accomplir, setAccomplir] = useState("");
+  const [proches, setProches] = useState("");
+  const [developpementRp, setDeveloppementRp] = useState("");
+  const [apportServeur, setApportServeur] = useState("");
+  const [interessant, setInteressant] = useState("");
 
   /* ── autre chose (optional, all structured) ── */
   const [autreChose, setAutreChose] = useState("");
@@ -587,6 +600,42 @@ function CreateTicketModal({
           ...footer,
         ].join("\n");
 
+      case "naissance-rp":
+        return [
+          `**Discord :** ${discordLine}`,
+          `**SteamID :** ${steamLine}`,
+          "",
+          `**Prénom et Nom :** ${nom.trim()}`,
+          `**Âge du personnage :** ${agePerso.trim()}`,
+          `**Sexe du personnage :** ${sexePerso}`,
+          `**Nationalité :** ${nationalite.trim()}`,
+          "",
+          "**Histoire de votre personnage :**",
+          histoireNaiss.trim(),
+          "",
+          "**Quelle est la personnalité de votre personnage ?**",
+          personnalite.trim(),
+          "",
+          "**Quels sont les objectifs de votre personnage ?**",
+          objectifs.trim(),
+          "",
+          "**Que cherche-t-il à accomplir en arrivant sur le serveur ?**",
+          accomplir.trim(),
+          "",
+          "**A-t-il des proches ou des ennemis ?**",
+          proches.trim() || "Non renseigné",
+          "",
+          "**Comment comptez-vous développer son RP ?**",
+          developpementRp.trim(),
+          "",
+          "**Qu'apportera ce personnage au serveur ?**",
+          apportServeur.trim(),
+          "",
+          "**Pourquoi ce personnage sera intéressant pour les autres joueurs ?**",
+          interessant.trim(),
+          ...(autreChose.trim() ? ["", "**Autre chose :**", autreChose.trim()] : []),
+        ].join("\n");
+
       default:
         return body;
     }
@@ -627,6 +676,13 @@ function CreateTicketModal({
       setError("Merci de remplir tous les champs obligatoires."); return;
     }
     if (presetCategory === "question" && (!typeQuestion || !descriptionQuestion.trim())) {
+      setError("Merci de remplir tous les champs obligatoires."); return;
+    }
+    if (presetCategory === "naissance-rp" && (
+      !agePerso.trim() || !sexePerso || !nationalite.trim() ||
+      !histoireNaiss.trim() || !personnalite.trim() || !objectifs.trim() ||
+      !developpementRp.trim() || !apportServeur.trim() || !interessant.trim()
+    )) {
       setError("Merci de remplir tous les champs obligatoires."); return;
     }
 
@@ -845,6 +901,72 @@ function CreateTicketModal({
                     <FieldLabel>Description <span className="text-primary">*</span></FieldLabel>
                     <textarea value={descriptionQuestion} onChange={(e) => setDescriptionQuestion(e.target.value)}
                       placeholder="Explique la situation en détail…" rows={5} className={textareaCls} />
+                  </div>
+                </>
+              )}
+
+              {/* ── NAISSANCE-RP spécifique ── */}
+              {presetCategory === "naissance-rp" && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <FieldLabel>Âge du personnage <span className="text-primary">*</span></FieldLabel>
+                      <input type="text" value={agePerso} onChange={(e) => setAgePerso(e.target.value)}
+                        placeholder="Ex : 24 ans" className={inputCls} />
+                    </div>
+                    <div>
+                      <FieldLabel>Sexe du personnage <span className="text-primary">*</span></FieldLabel>
+                      <select value={sexePerso} onChange={(e) => setSexePerso(e.target.value)} className={selectCls}>
+                        <option value="">— Choisir —</option>
+                        <option value="Masculin">Masculin</option>
+                        <option value="Féminin">Féminin</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <FieldLabel>Nationalité <span className="text-primary">*</span></FieldLabel>
+                    <input type="text" value={nationalite} onChange={(e) => setNationalite(e.target.value)}
+                      placeholder="Ex : Français, Britannique…" className={inputCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Histoire de votre personnage <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={histoireNaiss} onChange={(e) => setHistoireNaiss(e.target.value)}
+                      placeholder="Racontez l'histoire et le passé de votre personnage…" rows={5} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Quelle est la personnalité de votre personnage ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={personnalite} onChange={(e) => setPersonnalite(e.target.value)}
+                      placeholder="Décrivez son caractère, ses traits de personnalité…" rows={3} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Quels sont les objectifs de votre personnage ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={objectifs} onChange={(e) => setObjectifs(e.target.value)}
+                      placeholder="Ses buts, ses ambitions…" rows={3} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Que cherche-t-il à accomplir en arrivant sur le serveur ?</FieldLabel>
+                    <textarea value={accomplir} onChange={(e) => setAccomplir(e.target.value)}
+                      placeholder="Ce qu'il vient chercher, ses premières actions…" rows={3} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>A-t-il des proches ou des ennemis ?</FieldLabel>
+                    <textarea value={proches} onChange={(e) => setProches(e.target.value)}
+                      placeholder="Liens importants, alliés, rivaux…" rows={2} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Comment comptez-vous développer son RP ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={developpementRp} onChange={(e) => setDeveloppementRp(e.target.value)}
+                      placeholder="Arcs narratifs envisagés, évolution du personnage…" rows={3} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Qu'apportera ce personnage au serveur ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={apportServeur} onChange={(e) => setApportServeur(e.target.value)}
+                      placeholder="Sa valeur ajoutée pour la communauté…" rows={3} className={textareaCls} />
+                  </div>
+                  <div>
+                    <FieldLabel>Pourquoi ce personnage sera intéressant pour les autres joueurs ? <span className="text-primary">*</span></FieldLabel>
+                    <textarea value={interessant} onChange={(e) => setInteressant(e.target.value)}
+                      placeholder="Ce qui le rend unique et engageant pour les autres…" rows={3} className={textareaCls} />
                   </div>
                 </>
               )}
