@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearch } from "wouter";
 import {
   ArrowLeft,
@@ -19,7 +19,15 @@ import {
   Skull,
   Gift,
   GraduationCap,
-  ChevronRight,
+  Baby,
+  Home,
+  Package,
+  Star,
+  HelpCircle,
+  Flag,
+  Unlock,
+  AlertTriangle,
+  Swords,
 } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
 import {
@@ -53,38 +61,47 @@ const STATUS_COLORS: Record<TicketEntry["status"], string> = {
   closed: "bg-white/10 text-foreground/50 border-white/10",
 };
 
-type Scope = "mine" | "demandes" | "archives" | { faction: string };
+type Scope = "catalog" | "mine" | "archives" | { faction: string };
 
-const GENERAL_TICKET_TYPES = [
+const TICKET_CATALOG = [
   {
-    key: "ck",
-    label: "Demande de CK",
-    description: "Demander un Character Kill pour un personnage ciblé",
-    Icon: Skull,
+    section: "Administration",
+    types: [
+      { key: "naissance-rp",  label: "Naissance RP",      description: "Demander une naissance RP pour un personnage",               Icon: Baby          },
+      { key: "desertion",     label: "Désertion",          description: "Demander une désertion pour un personnage",                   Icon: Home          },
+      { key: "mort-rp",       label: "Mort RP",            description: "Demander une mort RP pour un personnage ciblé",              Icon: Skull         },
+      { key: "vol",           label: "Vol",                description: "Demander une autorisation de vol en jeu",                    Icon: Package       },
+      { key: "traitrise",     label: "Traîtrise",          description: "Demander une autorisation de traîtrise envers votre village", Icon: Star          },
+      { key: "ck",            label: "Demande de CK",      description: "Demander un Character Kill pour un personnage ciblé",        Icon: Swords        },
+      { key: "don",           label: "Demande de Don",     description: "Faire une demande de don en jeu",                            Icon: Gift          },
+      { key: "classe",        label: "Demande de Classe",  description: "Demander un changement ou une attribution de classe",        Icon: GraduationCap },
+    ],
   },
   {
-    key: "don",
-    label: "Demande de Don",
-    description: "Faire une demande de don en jeu",
-    Icon: Gift,
-  },
-  {
-    key: "classe",
-    label: "Demande de Classe",
-    description: "Demander un changement ou une attribution de classe",
-    Icon: GraduationCap,
+    section: "Support Modération",
+    types: [
+      { key: "question-modo", label: "Question modérateur",  description: "Poser une question à un modérateur",                        Icon: HelpCircle    },
+      { key: "signalement",   label: "Signaler un joueur",   description: "Signaler un joueur pour comportement inapproprié",          Icon: Flag          },
+      { key: "deban",         label: "Demande de déban",     description: "Demander le débannissement de votre compte",                Icon: Unlock        },
+      { key: "dewarn",        label: "Demande de déWarn",    description: "Demander le retrait d'un avertissement",                    Icon: AlertTriangle },
+      { key: "wipe",          label: "Demande de wipe",      description: "Demander un wipe de votre personnage",                      Icon: Trash2        },
+      { key: "refund",        label: "Demande de refund",    description: "Demander un remboursement suite à un bug ou une erreur",    Icon: RotateCcw     },
+    ],
   },
 ] as const;
+
+const ALL_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  TICKET_CATALOG.flatMap((s) => s.types.map((t) => [t.key, t.label])),
+);
 
 export default function Tickets() {
   const { user, isLoading: authLoading, login } = useAuth();
   const gerantFactions = user?.gerantFactions ?? [];
   const search = useSearch();
-  const [scope, setScope] = useState<Scope>("mine");
+  const [scope, setScope] = useState<Scope>("catalog");
   const [openTicketId, setOpenTicketId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState<string | false>(false);
 
-  // Deep link support: ?id=123 (from Discord notifications) opens the ticket directly.
   useEffect(() => {
     const params = new URLSearchParams(search);
     const idParam = params.get("id");
@@ -94,7 +111,7 @@ export default function Tickets() {
     }
   }, [search]);
 
-  const mine = useMyTickets(!!user);
+  const mine = useMyTickets(!!user && scope === "mine");
   const factionTickets = useFactionTickets(
     typeof scope === "object" ? scope.faction : null,
   );
@@ -135,6 +152,15 @@ export default function Tickets() {
     );
   }
 
+  const scopeTitle =
+    scope === "catalog"
+      ? "Toute les demandes"
+      : scope === "mine"
+        ? "Mes tickets"
+        : scope === "archives"
+          ? "Archives"
+          : `Gestion · ${scope.faction}`;
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
       <Link
@@ -145,166 +171,195 @@ export default function Tickets() {
         <span>Accueil</span>
       </Link>
 
-      <header className="flex items-center gap-4 mb-6">
-        <span className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
-          <TicketIcon className="w-7 h-7 text-primary" />
-        </span>
-        <div>
-          <p className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1">
-            Tickets
-          </p>
-          <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
-            {scope === "mine"
-              ? "Mes tickets"
-              : scope === "archives"
-                ? "Archives"
-                : `Tickets · ${scope.faction}`}
-          </h1>
-        </div>
+      <header className="mb-6">
+        <p className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1">
+          Ticket
+        </p>
+        <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+          {scopeTitle}
+        </h1>
       </header>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
-        <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit flex-wrap">
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit flex-wrap mb-8">
+        <button
+          type="button"
+          onClick={() => setScope("catalog")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            scope === "catalog"
+              ? "bg-primary/90 text-primary-foreground"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          Toute les demandes
+        </button>
+        <button
+          type="button"
+          onClick={() => setScope("mine")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            scope === "mine"
+              ? "bg-primary/90 text-primary-foreground"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          Mes tickets
+        </button>
+        {gerantFactions.map((f) => (
           <button
+            key={f}
             type="button"
-            onClick={() => setScope("mine")}
+            onClick={() => setScope({ faction: f })}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              scope === "mine"
+              typeof scope === "object" && scope.faction === f
                 ? "bg-primary/90 text-primary-foreground"
                 : "text-foreground/60 hover:text-foreground"
             }`}
           >
-            Mes tickets
+            Gestion · {f}
           </button>
+        ))}
+        {user.isResponsable && (
           <button
             type="button"
-            onClick={() => setScope("demandes")}
+            onClick={() => setScope("archives")}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              scope === "demandes"
+              scope === "archives"
                 ? "bg-primary/90 text-primary-foreground"
                 : "text-foreground/60 hover:text-foreground"
             }`}
           >
-            Demandes
-          </button>
-          {gerantFactions.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setScope({ faction: f })}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                typeof scope === "object" && scope.faction === f
-                  ? "bg-primary/90 text-primary-foreground"
-                  : "text-foreground/60 hover:text-foreground"
-              }`}
-            >
-              Gestion · {f}
-            </button>
-          ))}
-          {user.isResponsable && (
-            <button
-              type="button"
-              onClick={() => setScope("archives")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                scope === "archives"
-                  ? "bg-primary/90 text-primary-foreground"
-                  : "text-foreground/60 hover:text-foreground"
-              }`}
-            >
-              Archives
-            </button>
-          )}
-        </div>
-
-        {user.faction && scope !== "demandes" && (
-          <button
-            type="button"
-            onClick={() => setShowCreate("wl")}
-            className="inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground font-semibold px-4 py-2.5 text-sm transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nouveau ticket
+            Archives
           </button>
         )}
       </div>
 
-      {!user.faction && scope === "mine" && (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 mb-6 text-sm text-foreground/80">
-          Tu dois appartenir à une faction pour ouvrir un ticket WL. Les demandes générales (CK, Don, Classe) sont accessibles à tous.
-        </div>
-      )}
-
-      {scope === "demandes" && (
-        <GeneralRequestCatalog onOpen={(cat) => setShowCreate(cat)} />
-      )}
-
-      {scope !== "demandes" && list.isLoading && (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="h-20 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse"
-            />
+      {/* Catalog view */}
+      {scope === "catalog" && (
+        <div className="space-y-10 animate-in fade-in duration-300">
+          {TICKET_CATALOG.map(({ section, types }) => (
+            <div key={section}>
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.25em] text-foreground/40 mb-4">
+                {section}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {types.map(({ key, label, description, Icon }) => (
+                  <div
+                    key={key}
+                    className="flex flex-col gap-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5 hover:border-primary/25 hover:bg-white/[0.05] transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="w-11 h-11 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">
+                        <Icon className="w-5 h-5 text-primary" />
+                      </span>
+                      <div className="min-w-0 pt-0.5">
+                        <p className="font-bold text-foreground leading-tight">
+                          {label}
+                        </p>
+                        <p className="text-[0.78rem] text-foreground/50 mt-0.5 leading-snug">
+                          {description}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreate(key)}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.04] hover:border-primary/40 hover:bg-primary/10 hover:text-primary text-foreground/70 font-semibold px-4 py-2 text-sm transition-colors w-full"
+                    >
+                      Ouvrir un ticket
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
 
-      {scope !== "demandes" && list.isError && (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
-          Impossible de charger les tickets pour le moment.
-        </div>
-      )}
-
-      {scope !== "demandes" && list.data && (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-          {list.data.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-foreground/50">
-              Aucun ticket pour le moment.
-            </p>
-          ) : (
-            <ul>
-              {list.data.map((t) => (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenTicketId(t.id)}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 border-b border-white/[0.04] last:border-b-0 text-left hover:bg-white/[0.03] transition-colors"
-                  >
-                    <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <MessageSquare className="w-4 h-4 text-primary" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-foreground truncate">
-                          {t.subject}
-                        </span>
-                        <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full bg-white/10 text-foreground/60 px-2 py-0.5">
-                          {t.category}
-                        </span>
-                      </div>
-                      <p className="text-xs text-foreground/45 truncate">
-                        {t.faction} · {t.authorUsername}
-                        {t.claimedByUsername
-                          ? ` · pris par ${t.claimedByUsername}`
-                          : ""}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full border px-2.5 py-1 shrink-0 ${STATUS_COLORS[t.status]}`}
-                    >
-                      {STATUS_LABELS[t.status]}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+      {/* Ticket list (Mes tickets / Gestion / Archives) */}
+      {scope !== "catalog" && (
+        <>
+          {scope === "mine" && (
+            <div className="flex justify-end mb-4">
+              <button
+                type="button"
+                onClick={() => setScope("catalog")}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 text-foreground/60 hover:text-foreground hover:border-white/20 font-semibold px-4 py-2 text-sm transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Nouveau ticket
+              </button>
+            </div>
           )}
-        </div>
+
+          {list.isLoading && (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-20 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse"
+                />
+              ))}
+            </div>
+          )}
+
+          {list.isError && (
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-foreground/80">
+              Impossible de charger les tickets pour le moment.
+            </div>
+          )}
+
+          {list.data && (
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+              {list.data.length === 0 ? (
+                <p className="px-4 py-10 text-center text-sm text-foreground/50">
+                  Aucun ticket pour le moment.
+                </p>
+              ) : (
+                <ul>
+                  {list.data.map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenTicketId(t.id)}
+                        className="flex w-full items-center gap-3 px-4 py-3.5 border-b border-white/[0.04] last:border-b-0 text-left hover:bg-white/[0.03] transition-colors"
+                      >
+                        <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                          <MessageSquare className="w-4 h-4 text-primary" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-foreground truncate">
+                              {t.subject}
+                            </span>
+                            <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full bg-white/10 text-foreground/60 px-2 py-0.5">
+                              {ALL_CATEGORY_LABELS[t.category] ?? t.category}
+                            </span>
+                          </div>
+                          <p className="text-xs text-foreground/45 truncate">
+                            {t.faction} · {t.authorUsername}
+                            {t.claimedByUsername
+                              ? ` · pris par ${t.claimedByUsername}`
+                              : ""}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full border px-2.5 py-1 shrink-0 ${STATUS_COLORS[t.status]}`}
+                        >
+                          {STATUS_LABELS[t.status]}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {showCreate !== false && (
         <CreateTicketModal
-          presetCategory={showCreate !== "wl" ? showCreate : undefined}
+          presetCategory={showCreate}
           onClose={() => setShowCreate(false)}
         />
       )}
@@ -320,74 +375,19 @@ export default function Tickets() {
   );
 }
 
-const GENERAL_CATEGORY_LABELS: Record<string, string> = {
-  ck: "Demande de CK",
-  don: "Demande de Don",
-  classe: "Demande de Classe",
-};
-
-function GeneralRequestCatalog({
-  onOpen,
-}: {
-  onOpen: (category: string) => void;
-}) {
-  return (
-    <div className="animate-in fade-in duration-300">
-      <p className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-4">
-        Demandes générales
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {GENERAL_TICKET_TYPES.map(({ key, label, description, Icon }) => (
-          <div
-            key={key}
-            className="flex flex-col gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 hover:border-primary/30 hover:bg-white/[0.05] transition-colors"
-          >
-            <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                <Icon className="w-5 h-5 text-primary" />
-              </span>
-              <div className="min-w-0">
-                <p className="font-serif font-semibold text-foreground leading-tight">
-                  {label}
-                </p>
-                <p className="text-xs text-foreground/55 mt-0.5 leading-snug">
-                  {description}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onOpen(key)}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/40 text-primary hover:bg-primary/10 font-semibold px-4 py-2 text-sm transition-colors w-full"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Ouvrir un ticket
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function CreateTicketModal({
   presetCategory,
   onClose,
 }: {
-  presetCategory?: string;
+  presetCategory: string;
   onClose: () => void;
 }) {
-  const isGeneral = !!presetCategory;
-  const [category, setCategory] = useState<"plainte" | "demande">("plainte");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const create = useCreateTicket();
 
-  const effectiveCategory = isGeneral ? presetCategory : category;
-  const modalTitle = isGeneral
-    ? (GENERAL_CATEGORY_LABELS[presetCategory] ?? "Nouvelle demande")
-    : "Nouveau ticket";
+  const modalTitle = ALL_CATEGORY_LABELS[presetCategory] ?? "Nouvelle demande";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,7 +397,7 @@ function CreateTicketModal({
       return;
     }
     create.mutate(
-      { category: effectiveCategory, subject: subject.trim(), body: body.trim() },
+      { category: presetCategory, subject: subject.trim(), body: body.trim() },
       {
         onSuccess: () => onClose(),
         onError: (err) => setError((err as Error).message),
@@ -422,24 +422,6 @@ function CreateTicketModal({
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {!isGeneral && (
-            <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit">
-              {(["plainte", "demande"] as const).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCategory(c)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors ${
-                    category === c
-                      ? "bg-primary/90 text-primary-foreground"
-                      : "text-foreground/60 hover:text-foreground"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          )}
           <input
             type="text"
             value={subject}
@@ -450,11 +432,7 @@ function CreateTicketModal({
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder={
-              isGeneral
-                ? "Décris ta demande en détail…"
-                : "Décris ta plainte ou ta demande…"
-            }
+            placeholder="Décris ta demande en détail…"
             rows={5}
             className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50 transition-colors resize-none"
           />

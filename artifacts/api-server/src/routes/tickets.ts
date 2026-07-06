@@ -56,7 +56,11 @@ const router: IRouter = Router();
 
 const ID_RE = /^\d{15,25}$/;
 const WL_CATEGORIES = new Set(["plainte", "demande"]);
-const GENERAL_CATEGORIES = new Set(["ck", "don", "classe"]);
+const GENERAL_CATEGORIES = new Set([
+  "ck", "don", "classe",
+  "naissance-rp", "desertion", "mort-rp", "vol", "traitrise",
+  "question-modo", "signalement", "deban", "dewarn", "wipe", "refund",
+]);
 const ALL_CATEGORIES = new Set([...WL_CATEGORIES, ...GENERAL_CATEGORIES]);
 const FACTION_NAMES = new Set(FACTION_ROLES.map((f) => f.name));
 
