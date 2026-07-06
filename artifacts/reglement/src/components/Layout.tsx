@@ -282,7 +282,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {/* Icon rail */}
         <div
           ref={railRef}
-          className="w-16 shrink-0 flex flex-col items-center gap-2 py-5 border-r border-white/5 z-30"
+          className="w-[76px] shrink-0 flex flex-col items-center gap-2.5 py-5 border-r border-white/5 z-30"
         >
           {/* Accueil */}
           <RailButton
@@ -315,7 +315,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             active={openFlyout === "lore"}
             onClick={() => setOpenFlyout(openFlyout === "lore" ? null : "lore")}
           />
-          <div className="h-px w-7 bg-white/10 my-1" />
+          <div className="h-px w-9 bg-white/10 my-1" />
           {/* Groupes de règles */}
           {ruleGroups.map((group) => {
             const Icon = groupIcons[group.slug] ?? BookOpen;
@@ -334,7 +334,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           {/* Raccourcis compte — visibles uniquement si connecté */}
           {user && (
             <>
-              <div className="h-px w-7 bg-white/10 my-1 mt-auto" />
+              <div className="h-px w-9 bg-white/10 my-1 mt-auto" />
               <RailButton
                 as="link"
                 href="/profil"
@@ -370,7 +370,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {flyoutGroup && (
           <div
             ref={flyoutRef}
-            className="absolute left-16 top-0 bottom-0 w-64 bg-popover/95 backdrop-blur-md border-r border-white/10 z-20 animate-in slide-in-from-left-2 fade-in duration-200"
+            className="absolute left-[76px] top-0 bottom-0 w-64 bg-popover/95 backdrop-blur-md border-r border-white/10 z-20 animate-in slide-in-from-left-2 fade-in duration-200"
           >
             <div className="px-5 pt-5 pb-3">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-primary">
@@ -406,7 +406,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {openFlyout === "lore" && (
           <div
             ref={flyoutRef}
-            className="absolute left-16 top-0 bottom-0 w-64 bg-popover/95 backdrop-blur-md border-r border-white/10 z-20 animate-in slide-in-from-left-2 fade-in duration-200"
+            className="absolute left-[76px] top-0 bottom-0 w-64 bg-popover/95 backdrop-blur-md border-r border-white/10 z-20 animate-in slide-in-from-left-2 fade-in duration-200"
           >
             <div className="px-5 pt-5 pb-3">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-primary">
@@ -460,14 +460,14 @@ function RailButton({
   active?: boolean;
   onClick?: () => void;
 }) {
-  const cls = `group relative w-11 h-11 flex items-center justify-center rounded-full transition-colors ${
+  const cls = `group relative w-14 h-14 flex items-center justify-center rounded-[14px] transition-colors ${
     active
       ? "bg-primary text-primary-foreground"
-      : "text-muted-foreground hover:text-primary hover:bg-white/5"
+      : "text-muted-foreground bg-white/[0.04] hover:text-primary hover:bg-white/[0.08]"
   }`;
   const inner = (
     <>
-      <Icon className="w-5 h-5" />
+      <Icon className="w-6 h-6" />
       <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md bg-popover border border-popover-border px-2.5 py-1 text-xs text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-50">
         {label}
       </span>

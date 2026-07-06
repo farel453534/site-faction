@@ -1,21 +1,21 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import {
   BookOpen,
-  User,
-  ShieldHalf,
+  Shield,
+  Skull,
+  UserX,
+  Swords,
+  Users,
   ArrowRight,
   ChevronRight,
   Sparkles,
-  Swords,
-  Ticket,
-  BookMarked,
+  ShieldHalf,
 } from "lucide-react";
-import { FaDiscord } from "react-icons/fa6";
-import type { IconType } from "react-icons";
 import { useContent } from "@/lib/use-content";
 import { useAuth } from "@/lib/use-auth";
 
-const DISCORD_INVITE = "https://discord.gg/TaqPhgNeM4";
+const SERVER_IP = "51.91.215.65:27015";
 
 const groupIcons: Record<string, typeof BookOpen> = {
   "notions-de-bases": BookOpen,
@@ -24,141 +24,186 @@ const groupIcons: Record<string, typeof BookOpen> = {
   factions: ShieldHalf,
 };
 
+function useServerPlayerCount() {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch_() {
+      try {
+        const res = await fetch(`http://${SERVER_IP}/players.json`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        const data = await res.json();
+        if (!cancelled) setCount(Array.isArray(data) ? data.length : null);
+      } catch {
+        if (!cancelled) setCount(null);
+      }
+    }
+    fetch_();
+    const id = setInterval(fetch_, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  return count;
+}
+
+const TICKET_CARDS = [
+  {
+    key: "naissance-rp",
+    icon: Skull,
+    title: "Naissance RP",
+    desc: "Demander une naissance RP pour un personnage",
+  },
+  {
+    key: "desertion",
+    icon: UserX,
+    title: "Désertion",
+    desc: "Demander une désertion de faction pour votre personnage",
+  },
+  {
+    key: "mort-rp",
+    icon: Swords,
+    title: "Mort RP",
+    desc: "Demander une mort RP pour un personnage ciblé",
+  },
+];
+
 export default function Home() {
   const { data: content } = useContent();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
+  const playerCount = useServerPlayerCount();
 
   const groups = content?.groups ?? [];
 
-  const actions: {
-    key: string;
-    title: string;
-    description: string;
-    href: string;
-    external?: boolean;
-    icon: typeof BookOpen | IconType;
-    featured?: boolean;
-  }[] = [
-    {
-      key: "reglement",
-      title: "Consulter le règlement",
-      description: "Toutes les règles RP de la faction, réunies au même endroit.",
-      href: "/reglement",
-      icon: BookOpen,
-      featured: true,
-    },
-    {
-      key: "profil",
-      title: "Gérer mon profil",
-      description: "Ta réputation, tes captures et tes informations Discord.",
-      href: "/profil",
-      icon: User,
-    },
-    {
-      key: "discord",
-      title: "Rejoindre le Discord",
-      description: "Rejoins la communauté et reste informé des annonces.",
-      href: DISCORD_INVITE,
-      external: true,
-      icon: FaDiscord,
-    },
-    {
-      key: "wiki",
-      title: "Wiki",
-      description: "Guides, lore et informations sur le serveur MSSClick Poudlard.",
-      href: "https://mssclick-poudlard.gitbook.io/wiki",
-      external: true,
-      icon: BookMarked,
-    },
-    {
-      key: "tickets",
-      title: "Tickets",
-      description: "Dépose une plainte ou une demande auprès de ta faction.",
-      href: "/tickets",
-      icon: Ticket,
-    },
-  ];
-
-  if (isAdmin) {
-    actions.push({
-      key: "admin",
-      title: "Administration",
-      description: "Gérer les administrateurs, le contenu et les statistiques.",
-      href: "/admin",
-      icon: ShieldHalf,
-    });
-  }
-
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-      {/* Hero */}
-      <div className="mb-10">
-        <div className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-primary mb-3">
-          Panel Faction
+    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 space-y-8">
+      {/* ── Top row: Hero + Stat ── */}
+      <div className="flex gap-5 items-stretch">
+        {/* Hero banner */}
+        <div className="flex-1 min-w-0 rounded-2xl border border-primary/20 bg-gradient-to-br from-[#1a1209] via-[#13100b] to-background relative overflow-hidden flex flex-col justify-end p-7 min-h-[220px]">
+          {/* Glow */}
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_80%_at_75%_50%,hsl(var(--primary)/0.12),transparent)]" />
+          {/* Decorative icon */}
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-10">
+            <Shield className="w-32 h-32 text-primary" strokeWidth={1} />
+          </div>
+
+          <div className="relative z-10">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-primary mb-2">
+              MSSClick · Poudlard RP
+            </div>
+            <h1 className="font-serif text-3xl md:text-4xl font-extrabold text-foreground leading-[1.08] tracking-tight mb-3">
+              {user ? `Bienvenue,\u00a0${user.displayName}` : "Règlement\nFaction"}
+            </h1>
+            <p className="text-foreground/55 text-sm leading-relaxed max-w-xs mb-5">
+              Consulte les règles de ta faction et ouvre un ticket directement
+              depuis le panel.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/reglement"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Voir le règlement
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/tickets"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-2.5 text-sm font-semibold text-foreground hover:border-primary/40 hover:bg-white/[0.08] transition-colors"
+              >
+                Ouvrir un ticket
+              </Link>
+            </div>
+          </div>
         </div>
-        <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-          {user ? `Bienvenue, ${user.displayName}` : "Bienvenue"}
-        </h1>
-        <p className="text-foreground/60 mt-3 max-w-2xl leading-relaxed">
-          Ton espace pour la faction : consulte le règlement, gère ton profil
-          et accède à tout ce dont tu as besoin.
-        </p>
-      </div>
 
-      {/* Action cards */}
-      <div className="grid gap-4 sm:grid-cols-2 mb-12">
-        {actions.map((a) => {
-          const Icon = a.icon;
-          const cardClass = a.featured
-            ? "sm:col-span-2 group flex items-center gap-5 rounded-2xl border border-primary/30 bg-primary/[0.06] p-6 transition-colors hover:bg-primary/[0.1] hover:border-primary/50"
-            : "group flex items-center gap-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 transition-colors hover:bg-white/[0.05] hover:border-primary/30";
-          const inner = (
-            <>
-              <span className="w-12 h-12 shrink-0 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
-                <Icon className="w-6 h-6" />
+        {/* Stat card — Joueurs en ligne */}
+        <div className="w-64 shrink-0 rounded-2xl border border-white/[0.07] bg-white/[0.03] flex flex-col items-start justify-between p-6 gap-4">
+          <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
+            <Users className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <div className="text-[0.7rem] text-foreground/45 mb-0.5">
+              Joueurs en ligne
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-extrabold font-serif text-foreground leading-none">
+                {playerCount === null ? "—" : playerCount}
               </span>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-serif text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {a.title}
-                </h2>
-                <p className="text-foreground/55 text-sm mt-1 leading-snug">
-                  {a.description}
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-            </>
-          );
-          return a.external ? (
-            <a
-              key={a.key}
-              href={a.href}
-              target="_blank"
-              rel="noreferrer"
-              className={cardClass}
-            >
-              {inner}
-            </a>
-          ) : (
-            <Link key={a.key} href={a.href} className={cardClass}>
-              {inner}
-            </Link>
-          );
-        })}
+              <span
+                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                  playerCount !== null ? "bg-emerald-500" : "bg-white/20"
+                }`}
+              />
+            </div>
+          </div>
+          <a
+            href={`https://www.battlemetrics.com/servers/fivem?q=${SERVER_IP}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[0.72rem] text-primary/70 hover:text-primary transition-colors flex items-center gap-1"
+          >
+            Voir le serveur <ChevronRight className="w-3 h-3" />
+          </a>
+        </div>
       </div>
 
-      {/* Rule categories */}
+      {/* ── Ticket cards ── */}
+      <section>
+        <div className="flex items-baseline gap-2 mb-4">
+          <span className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-primary">
+            Ticket
+          </span>
+          <h2 className="font-serif text-lg font-bold text-foreground">
+            Demandes
+          </h2>
+          <div className="flex-1" />
+          <Link
+            href="/tickets"
+            className="text-xs text-primary/70 hover:text-primary transition-colors font-semibold"
+          >
+            Tout voir →
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {TICKET_CARDS.map(({ key, icon: Icon, title, desc }) => (
+            <Link
+              key={key}
+              href={`/tickets?category=${key}`}
+              className="group flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 hover:border-primary/30 hover:bg-white/[0.05] transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary/12 border border-primary/20 flex items-center justify-center">
+                <Icon className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <div className="font-serif font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+                  {title}
+                </div>
+                <p className="text-xs text-foreground/45 leading-snug">{desc}</p>
+              </div>
+              <div className="rounded-lg border border-white/[0.08] bg-white/[0.04] py-2 text-center text-xs font-semibold text-foreground/70 group-hover:border-primary/30 group-hover:text-primary transition-colors">
+                Ouvrir un ticket
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Catégories du règlement ── */}
       {groups.length > 0 && (
         <section>
-          <h2 className="font-serif text-lg font-semibold text-primary mb-4">
+          <h2 className="font-serif text-base font-semibold text-primary mb-3">
             Catégories du règlement
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {groups.map((group) => {
               const Icon = groupIcons[group.slug] ?? BookOpen;
               const first = group.pages[0];
-              const href = first
-                ? `/${group.slug}/${first.slug}`
-                : "/reglement";
+              const href = first ? `/${group.slug}/${first.slug}` : "/reglement";
               return (
                 <Link
                   key={group.slug}
