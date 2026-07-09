@@ -39,6 +39,8 @@ import {
   useUnclaimTicket,
   useCloseTicket,
   useReopenTicket,
+  useAcceptTicket,
+  useRefuseTicket,
   useAddTicketParticipant,
   useRemoveTicketParticipant,
   useGeneralStaff,
@@ -59,6 +61,16 @@ const STATUS_COLORS: Record<TicketEntry["status"], string> = {
   open: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   claimed: "bg-blue-500/15 text-blue-300 border-blue-500/30",
   closed: "bg-white/10 text-foreground/50 border-white/10",
+};
+
+const DECISION_LABELS: Record<string, string> = {
+  accepted: "Accepté",
+  refused: "Refusé",
+};
+
+const DECISION_COLORS: Record<string, string> = {
+  accepted: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  refused: "bg-red-500/15 text-red-300 border-red-500/30",
 };
 
 type Scope = "catalog" | "mine" | "archives" | "general" | { faction: string };
@@ -101,8 +113,11 @@ export default function Tickets() {
     }
   }, [search]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   const canSeeGeneral = !!(user?.isResponsable || user?.isGeneralStaff);
-  const mine = useMyTickets(!!user && scope === "mine");
+  // Always enabled so the author's tickets stay fresh regardless of scope.
+  const mine = useMyTickets(!!user);
   const factionTickets = useFactionTickets(
     typeof scope === "object" ? scope.faction : null,
   );
@@ -177,70 +192,77 @@ export default function Tickets() {
         </h1>
       </header>
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/10 w-fit flex-wrap mb-8">
-        <button
-          type="button"
-          onClick={() => setScope("catalog")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-            scope === "catalog"
-              ? "bg-primary/90 text-primary-foreground"
-              : "text-foreground/60 hover:text-foreground"
-          }`}
-        >
-          Toute les demandes
-        </button>
-        <button
-          type="button"
-          onClick={() => setScope("mine")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-            scope === "mine"
-              ? "bg-primary/90 text-primary-foreground"
-              : "text-foreground/60 hover:text-foreground"
-          }`}
-        >
-          Mes tickets
-        </button>
-        {gerantFactions.map((f) => (
+      {/* Tab bar — scrollable horizontally on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 mb-8">
+        <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/10 w-max min-w-full sm:w-fit">
           <button
-            key={f}
             type="button"
-            onClick={() => setScope({ faction: f })}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              typeof scope === "object" && scope.faction === f
+            onClick={() => setScope("catalog")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
+              scope === "catalog"
                 ? "bg-primary/90 text-primary-foreground"
                 : "text-foreground/60 hover:text-foreground"
             }`}
           >
-            Gestion · {f}
+            Toutes les demandes
           </button>
-        ))}
-        {canSeeGeneral && (
           <button
             type="button"
-            onClick={() => setScope("general")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              scope === "general"
+            onClick={() => setScope("mine")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
+              scope === "mine"
                 ? "bg-primary/90 text-primary-foreground"
                 : "text-foreground/60 hover:text-foreground"
             }`}
           >
-            Gestion Générale
+            Mes tickets
+            {(mine.data?.length ?? 0) > 0 && (
+              <span className="ml-1.5 text-[0.6rem] font-bold bg-primary/30 text-primary rounded-full px-1.5 py-0.5">
+                {mine.data!.filter((t) => t.status !== "closed").length || null}
+              </span>
+            )}
           </button>
-        )}
-        {user.isResponsable && (
-          <button
-            type="button"
-            onClick={() => setScope("archives")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              scope === "archives"
-                ? "bg-primary/90 text-primary-foreground"
-                : "text-foreground/60 hover:text-foreground"
-            }`}
-          >
-            Archives
-          </button>
-        )}
+          {gerantFactions.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setScope({ faction: f })}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
+                typeof scope === "object" && scope.faction === f
+                  ? "bg-primary/90 text-primary-foreground"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              Gestion · {f}
+            </button>
+          ))}
+          {canSeeGeneral && (
+            <button
+              type="button"
+              onClick={() => setScope("general")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
+                scope === "general"
+                  ? "bg-primary/90 text-primary-foreground"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              Gestion Générale
+            </button>
+          )}
+          {user.isResponsable && (
+            <button
+              type="button"
+              onClick={() => setScope("archives")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
+                scope === "archives"
+                  ? "bg-primary/90 text-primary-foreground"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              Archives
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Catalog view */}
@@ -318,15 +340,56 @@ export default function Tickets() {
       {scope !== "catalog" && (
         <>
           {scope === "mine" && (
-            <div className="flex justify-end mb-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher un ticket…"
+                  className="w-full rounded-full bg-white/[0.04] border border-white/10 pl-4 pr-10 py-2 text-sm text-foreground placeholder:text-foreground/35 focus:outline-none focus:border-primary/50 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
+                    aria-label="Effacer la recherche"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setScope("catalog")}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 text-foreground/60 hover:text-foreground hover:border-white/20 font-semibold px-4 py-2 text-sm transition-colors"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 text-foreground/60 hover:text-foreground hover:border-white/20 font-semibold px-4 py-2 text-sm transition-colors whitespace-nowrap"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Nouveau ticket
               </button>
+            </div>
+          )}
+
+          {(scope === "general" || typeof scope === "object") && (
+            <div className="relative mb-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Rechercher un ticket…"
+                className="w-full rounded-full bg-white/[0.04] border border-white/10 pl-4 pr-10 py-2 text-sm text-foreground placeholder:text-foreground/35 focus:outline-none focus:border-primary/50 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
+                  aria-label="Effacer la recherche"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
@@ -351,52 +414,69 @@ export default function Tickets() {
             </div>
           )}
 
-          {list.data && (
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-              {list.data.length === 0 ? (
-                <p className="px-4 py-10 text-center text-sm text-foreground/50">
-                  Aucun ticket pour le moment.
-                </p>
-              ) : (
-                <ul>
-                  {list.data.map((t) => (
-                    <li key={t.id}>
-                      <button
-                        type="button"
-                        onClick={() => setOpenTicketId(t.id)}
-                        className="flex w-full items-center gap-3 px-4 py-3.5 border-b border-white/[0.04] last:border-b-0 text-left hover:bg-white/[0.03] transition-colors"
-                      >
-                        <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                          <MessageSquare className="w-4 h-4 text-primary" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-foreground truncate">
-                              {t.subject}
-                            </span>
-                            <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full bg-white/10 text-foreground/60 px-2 py-0.5">
-                              {ALL_CATEGORY_LABELS[t.category] ?? t.category}
-                            </span>
-                          </div>
-                          <p className="text-xs text-foreground/45 truncate">
-                            {t.faction} · {t.authorUsername}
-                            {t.claimedByUsername
-                              ? ` · pris par ${t.claimedByUsername}`
-                              : ""}
-                          </p>
-                        </div>
-                        <span
-                          className={`text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full border px-2.5 py-1 shrink-0 ${STATUS_COLORS[t.status]}`}
+          {list.data && (() => {
+            const q = searchQuery.trim().toLowerCase();
+            const filtered = q
+              ? list.data.filter(
+                  (t) =>
+                    t.subject.toLowerCase().includes(q) ||
+                    t.authorUsername.toLowerCase().includes(q) ||
+                    (ALL_CATEGORY_LABELS[t.category] ?? t.category).toLowerCase().includes(q),
+                )
+              : list.data;
+            return (
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                {filtered.length === 0 ? (
+                  <p className="px-4 py-10 text-center text-sm text-foreground/50">
+                    {q ? "Aucun résultat pour cette recherche." : "Aucun ticket pour le moment."}
+                  </p>
+                ) : (
+                  <ul>
+                    {filtered.map((t) => (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenTicketId(t.id)}
+                          className="flex w-full items-center gap-3 px-4 py-3.5 border-b border-white/[0.04] last:border-b-0 text-left hover:bg-white/[0.03] transition-colors"
                         >
-                          {STATUS_LABELS[t.status]}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+                          <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <MessageSquare className="w-4 h-4 text-primary" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-foreground truncate">
+                                {t.subject}
+                              </span>
+                              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full bg-white/10 text-foreground/60 px-2 py-0.5 hidden sm:inline">
+                                {ALL_CATEGORY_LABELS[t.category] ?? t.category}
+                              </span>
+                            </div>
+                            <p className="text-xs text-foreground/45 truncate">
+                              {t.faction} · {t.authorUsername}
+                              {t.claimedByUsername
+                                ? ` · pris par ${t.claimedByUsername}`
+                                : ""}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {t.decision ? (
+                              <span className={`text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full border px-2.5 py-1 ${DECISION_COLORS[t.decision] ?? ""}`}>
+                                {DECISION_LABELS[t.decision] ?? t.decision}
+                              </span>
+                            ) : (
+                              <span className={`text-[0.62rem] font-semibold uppercase tracking-[0.14em] rounded-full border px-2.5 py-1 ${STATUS_COLORS[t.status]}`}>
+                                {STATUS_LABELS[t.status]}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 
@@ -1015,6 +1095,8 @@ function TicketDetailModal({
   const unclaim = useUnclaimTicket(ticketId);
   const close = useCloseTicket(ticketId);
   const reopen = useReopenTicket(ticketId);
+  const accept = useAcceptTicket(ticketId);
+  const refuse = useRefuseTicket(ticketId);
   const addParticipant = useAddTicketParticipant(ticketId);
   const removeParticipant = useRemoveTicketParticipant(ticketId);
 
@@ -1148,19 +1230,35 @@ function TicketDetailModal({
                     />
                   )}
                   {ticket.status === "claimed" && (
-                    <ActionButton
-                      icon={<RotateCcw className="w-3.5 h-3.5" />}
-                      label="Libérer"
-                      onClick={() => unclaim.mutate()}
-                      loading={unclaim.isPending}
-                    />
+                    <>
+                      <ActionButton
+                        icon={<RotateCcw className="w-3.5 h-3.5" />}
+                        label="Libérer"
+                        onClick={() => unclaim.mutate()}
+                        loading={unclaim.isPending}
+                      />
+                      <ActionButton
+                        icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                        label="Accepter"
+                        onClick={() => accept.mutate()}
+                        loading={accept.isPending}
+                        variant="accept"
+                      />
+                      <ActionButton
+                        icon={<X className="w-3.5 h-3.5" />}
+                        label="Refuser"
+                        onClick={() => refuse.mutate()}
+                        loading={refuse.isPending}
+                        variant="destructive"
+                      />
+                    </>
                   )}
                   <ActionButton
                     icon={<CheckCircle2 className="w-3.5 h-3.5" />}
                     label="Fermer"
                     onClick={() => close.mutate()}
                     loading={close.isPending}
-                    variant="destructive"
+                    variant="default"
                   />
                 </div>
               )}
@@ -1442,18 +1540,20 @@ function ActionButton({
   label: string;
   onClick: () => void;
   loading: boolean;
-  variant?: "default" | "destructive";
+  variant?: "default" | "destructive" | "accept";
 }) {
+  const cls =
+    variant === "destructive"
+      ? "bg-red-500/15 text-red-300 hover:bg-red-500/25"
+      : variant === "accept"
+        ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+        : "bg-primary/15 text-primary hover:bg-primary/25";
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={loading}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-        variant === "destructive"
-          ? "bg-destructive/15 text-destructive hover:bg-destructive/25"
-          : "bg-primary/15 text-primary hover:bg-primary/25"
-      }`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${cls}`}
     >
       {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : icon}
       {label}

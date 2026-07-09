@@ -21,6 +21,15 @@ export function getAppDb(): NodePgDatabase<typeof schema> | null {
     connectionTimeoutMillis: 15_000,
   });
   db = drizzle(pool, { schema });
+
+  // Non-blocking inline migrations — add columns that may be missing on older
+  // deployments. Errors are logged but never crash the server.
+  pool.query(
+    `ALTER TABLE tickets ADD COLUMN IF NOT EXISTS decision TEXT`,
+  ).catch((err: unknown) => {
+    console.error("[app-db] inline migration failed:", err);
+  });
+
   return db;
 }
 

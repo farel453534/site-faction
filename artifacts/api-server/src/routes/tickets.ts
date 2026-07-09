@@ -48,9 +48,12 @@ import {
   unclaimTicket,
   closeTicket,
   reopenTicket,
+  acceptTicket,
+  refuseTicket,
   addParticipant,
   removeParticipant,
 } from "../lib/tickets";
+import { notifyTicketReply } from "../lib/discord";
 
 const router: IRouter = Router();
 
@@ -83,6 +86,7 @@ function serializeTicket(t: Awaited<ReturnType<typeof getTicketById>>) {
     status: t.status,
     claimedBy: t.claimedBy,
     claimedByUsername: t.claimedByUsername,
+    decision: (t as Record<string, unknown>)["decision"] as string | null ?? null,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     closedAt: t.closedAt ? t.closedAt.toISOString() : null,
@@ -194,8 +198,10 @@ router.get("/tickets", requireAuth, async (req, res) => {
       return;
     }
     const tickets = await listMyTickets(user.id);
+    // Authors always see all their tickets (including closed) so they can
+    // read the staff response after a ticket is closed/accepted/refused.
     res.json({
-      tickets: tickets.filter((t) => t.status !== "closed").map(serializeTicket),
+      tickets: tickets.map(serializeTicket),
     });
   } catch (err) {
     req.log.error({ err }, "Failed to list tickets");
@@ -299,14 +305,30 @@ router.post("/tickets/:id/messages", requireAuth, async (req, res) => {
       res.status(403).json({ error: "forbidden" });
       return;
     }
+    const staffReply = isStaffFor(user, ticket);
     const message = await addMessage({
       ticketId: id,
       authorId: user.id,
       authorUsername: user.global_name || user.username,
-      isStaff: isStaffFor(user, ticket),
+      isStaff: staffReply,
       body: text || "📎",
       attachments,
     });
+
+    // Notify via Discord DM — fire-and-forget, never blocks the response.
+    notifyTicketReply({
+      ticketId: id,
+      ticketSubject: ticket.subject,
+      senderUsername: user.global_name || user.username,
+      isStaff: staffReply,
+      authorId: ticket.authorId,
+      claimedBy: ticket.claimedBy,
+      currentUserId: user.id,
+      url: buildTicketUrl(req, id),
+    }).catch((err) => {
+      req.log.error({ err }, "Failed to notify Discord for ticket reply");
+    });
+
     res.status(201).json({
       message: {
         id: message.id,
@@ -469,6 +491,42 @@ router.post("/tickets/:id/close", requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Failed to close ticket");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// POST /tickets/:id/accept — staff accepts and closes the ticket.
+router.post("/tickets/:id/accept", requireAuth, async (req, res) => {
+  if (!dbGuard(res)) return;
+  const user = (req as AuthedRequest).user!;
+  const id = Number(req.params["id"]);
+  try {
+    const ticket = await getTicketById(id);
+    if (!ticket) { res.status(404).json({ error: "not_found" }); return; }
+    if (!requireStaffOnTicket(ticket, user)) { res.status(403).json({ error: "forbidden" }); return; }
+    if (ticket.status === "closed") { res.status(409).json({ error: "ticket_closed" }); return; }
+    await acceptTicket(id);
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to accept ticket");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// POST /tickets/:id/refuse — staff refuses and closes the ticket.
+router.post("/tickets/:id/refuse", requireAuth, async (req, res) => {
+  if (!dbGuard(res)) return;
+  const user = (req as AuthedRequest).user!;
+  const id = Number(req.params["id"]);
+  try {
+    const ticket = await getTicketById(id);
+    if (!ticket) { res.status(404).json({ error: "not_found" }); return; }
+    if (!requireStaffOnTicket(ticket, user)) { res.status(403).json({ error: "forbidden" }); return; }
+    if (ticket.status === "closed") { res.status(409).json({ error: "ticket_closed" }); return; }
+    await refuseTicket(id);
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to refuse ticket");
     res.status(500).json({ error: "internal_error" });
   }
 });

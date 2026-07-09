@@ -272,11 +272,26 @@ export async function closeTicket(ticketId: number): Promise<void> {
     .where(eq(ticketsTable.id, ticketId));
 }
 
+export async function acceptTicket(ticketId: number): Promise<void> {
+  await db()
+    .update(ticketsTable)
+    .set({ status: "closed", decision: "accepted", closedAt: new Date(), updatedAt: new Date() })
+    .where(eq(ticketsTable.id, ticketId));
+}
+
+export async function refuseTicket(ticketId: number): Promise<void> {
+  await db()
+    .update(ticketsTable)
+    .set({ status: "closed", decision: "refused", closedAt: new Date(), updatedAt: new Date() })
+    .where(eq(ticketsTable.id, ticketId));
+}
+
 export async function reopenTicket(ticketId: number, claimedBy: string | null): Promise<void> {
   await db()
     .update(ticketsTable)
     .set({
       status: claimedBy ? "claimed" : "open",
+      decision: null, // clear any previous accept/refuse decision
       closedAt: null,
       updatedAt: new Date(),
     })

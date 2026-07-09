@@ -338,6 +338,43 @@ export async function sendDirectMessage(
 }
 
 /**
+ * Notifies the relevant party when a message is posted in a ticket:
+ * - If staff replied → DM the ticket author.
+ * - If the author replied → DM the staff member who claimed the ticket (if any).
+ * Errors are swallowed so a missing bot token never breaks the reply flow.
+ */
+export async function notifyTicketReply(params: {
+  ticketId: number;
+  ticketSubject: string;
+  senderUsername: string;
+  isStaff: boolean;
+  authorId: string;
+  claimedBy: string | null;
+  currentUserId: string;
+  url?: string;
+}): Promise<void> {
+  const { ticketId, ticketSubject, senderUsername, isStaff, authorId, claimedBy, currentUserId, url } = params;
+  const link = url ? `\n🔗 ${url}` : "";
+  const preview = `📬 **Nouvelle réponse** dans le ticket #${ticketId} — *${ticketSubject}*\nDe : **${senderUsername}**${link}`;
+
+  if (isStaff) {
+    // Staff replied → notify the author (unless the staff IS the author)
+    if (authorId !== currentUserId) {
+      await sendDirectMessage(authorId, preview).catch((err) => {
+        console.error(`[discord] Failed to DM ticket author ${authorId}:`, err);
+      });
+    }
+  } else {
+    // Author (or participant) replied → notify the staff who claimed it
+    if (claimedBy && claimedBy !== currentUserId) {
+      await sendDirectMessage(claimedBy, preview).catch((err) => {
+        console.error(`[discord] Failed to DM claimer ${claimedBy}:`, err);
+      });
+    }
+  }
+}
+
+/**
  * Notifies everyone who should know about a new ticket:
  * - DMs every gérant of the ticket's faction (their gérant role, not other factions').
  * - Posts a summary in the shared tickets log channel (visible to Responsable/admins).

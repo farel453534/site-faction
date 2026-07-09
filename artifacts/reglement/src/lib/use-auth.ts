@@ -271,6 +271,8 @@ export interface TicketEntry {
   status: "open" | "claimed" | "closed";
   claimedBy: string | null;
   claimedByUsername: string | null;
+  /** null = no decision | "accepted" | "refused" */
+  decision: string | null;
   createdAt: string;
   updatedAt: string;
   closedAt: string | null;
@@ -509,6 +511,12 @@ export function useCloseTicket(ticketId: number) {
 }
 export function useReopenTicket(ticketId: number) {
   return useTicketAction(ticketId, "reopen");
+}
+export function useAcceptTicket(ticketId: number) {
+  return useTicketAction(ticketId, "accept");
+}
+export function useRefuseTicket(ticketId: number) {
+  return useTicketAction(ticketId, "refuse");
 }
 
 export function useAddTicketParticipant(ticketId: number) {

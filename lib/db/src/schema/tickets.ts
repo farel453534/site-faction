@@ -23,6 +23,8 @@ export const ticketsTable = pgTable("tickets", {
   status: text("status").notNull().default("open"), // open | claimed | closed
   claimedBy: text("claimed_by"),
   claimedByUsername: text("claimed_by_username"),
+  /** null = no decision yet | "accepted" | "refused" */
+  decision: text("decision"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
